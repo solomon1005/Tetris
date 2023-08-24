@@ -217,7 +217,7 @@ void game(int screen[][100], int screen_save[][100], struct FallingMino* falling
 	SetMino(NEXT_X, NEXT4_Y, NextMino[3], UP, screen);
 	SetMino(NEXT_X, NEXT5_Y, NextMino[4], UP, screen);
 
-	srand((unsigned int)time(NULL) + 10);
+	srand((unsigned int)time(NULL) + 10);//병규 바보임
 
 	_beginthreadex(NULL, 0, Thread_Ingame, 0, 0, NULL);
 
