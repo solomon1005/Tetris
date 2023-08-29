@@ -1,9 +1,8 @@
 ﻿//고쳐야 할 것
 // 
-//메인 화면 -  최고 점수, 게임 모드(40line, endless)선택 
+//메인 화면 -  최고 점수, 게임 모드(40line, blits, zen)선택 
 //미노가 일정 높이 이상 올라오면 다음 미노 위치 표시하기
 //bgm, 효과음 넣기 - (입브금? tetr.io? 뿌요뿌요?)
-//버그 픽스
 //버그 픽스
 //버그 픽스
 //버그 픽스
@@ -23,6 +22,7 @@
 #include <conio.h>
 #include <stdbool.h>
 #include <process.h>
+#include <string.h>
 
 #define HOLD_X 2
 #define HOLD_Y 7
@@ -99,18 +99,35 @@ struct FallingMino
 	int direction;
 };
 
+struct MyMemoryType
+{
+	int screen[100][100];
+	struct FallingMino* fallingmino;
+	char hold[20];
+	char nextmino[20];
+	bool IsHolded;
+	struct MyMemoryType* next;
+};
+
+struct MyHeadType
+{
+	int count;
+	struct MyMemoryType* next;
+};
+
+
 
 void print_screen(int screen[][100]);
 
-void load_map(FILE* fp, int screen[][100], int screen_save[][100]);
+void load_map(FILE* fp, int screen[][100]);
 
 void CursorView();
 
 void gotoxy(int x, int y);
 
-void main_screen(int screen[][100], int screen_save[][100]);
+void main_screen(struct MyHeadType* MyHead, int screen[][100]);
 
-void game(int screen[][100], int screen_save[][100], struct FallingMino* fallingmino);
+void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType* MyHead);
 
 unsigned _stdcall Thread_Ingame(void* arg);
 
@@ -122,13 +139,13 @@ void CreateNextMino(char NextMino[], bool IsFirstCreate);
 
 void SummonMino(struct FallingMino* fallingminio, char NextMino[], int screen[][100]);
 
-void Drop_Mino(struct FallingMino* fallingmino, int screen[][100], int screen_save[][100]);
+void Drop_Mino(struct FallingMino* fallingmino, int screen[][100]);
 
 void Clear_Line(int screen[][100]);
 
 void DeleteMino(int x, int y, char shape, int direction, int screen[][100]);
 
-void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100], int screen_save[][100]);
+void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]);
 
 void Hard_Drop(struct FallingMino* fallingmino, int screen[][100]);
 
@@ -144,6 +161,12 @@ bool IsMinoSetHere(int mino_x, int mino_y, int shape, int direction, int screen[
 
 struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][100]);
 
+struct MyHeadType* MakeStack();
+
+void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], struct FallingMino* fallingmino, int screen[][100]);
+
+struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead);
+
 
 char minos[7] = { 'I', 'S', 'Z', 'O', 'T', 'J', 'L' };
 bool IsMinoFalling = false;
@@ -153,23 +176,29 @@ bool IsRetry = false;
 bool IsInstantRetry = false;
 int All_Clear = 0;
 int screen[100][100] = { 0 };
-int screen_save[100][100] = { 0 };
 struct FallingMino fallingmino;
 char Hold[20] = { '\0' };
-int drop_count = 8;
+char NextMino[20] = { '\0' };
+int drop_count = 50;
 
 
 int main()
 {
 	CursorView();
 
+	struct MyHeadType* MyHead = MakeStack();
+
 	while (1)
 	{
 		srand((unsigned int)time(NULL));
 		if (!IsRetry)
-			main_screen(screen, screen_save);
+			main_screen(MyHead, screen);
 
-		game(screen, screen_save, &fallingmino);
+		game(screen, &fallingmino, MyHead);
+		while (MyHead->count) {
+			struct MyMemoryType* MyMemory = MyStack_Pop(MyHead);
+			free(MyMemory);
+		}
 
 	}
 
@@ -177,23 +206,24 @@ int main()
 }
 
 
-void game(int screen[][100], int screen_save[][100], struct FallingMino* fallingmino)
+void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType* MyHead)
 {
 	IsGamePlaying = true;
 	IsMinoFalling = false;
 	IsHolded = false;
 	IsRetry = false;
 	IsInstantRetry = false;
+	char c = '\0';
+	for (int i = 0; i < 20; i++) NextMino[i] = '\0';
 
 	FILE* fp = fopen("map.txt", "r");
-	load_map(fp, screen, screen_save);
+	load_map(fp, screen);
 	fclose(fp);
 
 	gotoxy(0, 0);
 	print_screen(screen);
+	MyStack_Push(MyHead, Hold, NextMino, fallingmino, screen);
 
-	char NextMino[20] = { '\0' };
-	char c = '\0';
 
 	for (int i = 0; i < 20; i++) Hold[i] = '\0';
 
@@ -217,7 +247,7 @@ void game(int screen[][100], int screen_save[][100], struct FallingMino* falling
 	SetMino(NEXT_X, NEXT4_Y, NextMino[3], UP, screen);
 	SetMino(NEXT_X, NEXT5_Y, NextMino[4], UP, screen);
 
-	srand((unsigned int)time(NULL) + 10);//병규 바보임
+	srand((unsigned int)time(NULL) + 10);
 
 	_beginthreadex(NULL, 0, Thread_Ingame, 0, 0, NULL);
 
@@ -240,10 +270,10 @@ void game(int screen[][100], int screen_save[][100], struct FallingMino* falling
 					switch (c)
 					{
 					case 75://왼
-						Move_Mino(fallingmino, LEFT, screen, screen_save);
+						Move_Mino(fallingmino, LEFT, screen);
 						break;
 					case 77://오
-						Move_Mino(fallingmino, RIGHT, screen, screen_save);
+						Move_Mino(fallingmino, RIGHT, screen);
 						break;
 					case 72://위
 						*fallingmino = Turn_Right(*fallingmino, 1, screen);
@@ -411,7 +441,7 @@ void game(int screen[][100], int screen_save[][100], struct FallingMino* falling
 								}
 							}
 							if (flag)
-								Drop_Mino(fallingmino, screen, screen_save);
+								Drop_Mino(fallingmino, screen);
 						}
 
 						SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
@@ -478,12 +508,47 @@ void game(int screen[][100], int screen_save[][100], struct FallingMino* falling
 					game_over(screen);
 					return;
 				}
+				else if (c == 26)
+				{
+					if (MyHead->count < 2) continue;
+					struct MyMemoryType* MyMemory = MyStack_Pop(MyHead);
+					free(MyMemory);
+					MyMemory = MyStack_Pop(MyHead);
+					if (MyMemory != NULL)
+					{
+						IsHolded = MyMemory->IsHolded;
+						for (int i = SCREEN_START_Y; i <= SCREEN_END_Y; i++) {
+							for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
+								screen[i][j] = MyMemory->screen[i][j];
+						}
+
+						{
+							DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+							DeleteMino(NEXT_X, NEXT1_Y, NextMino[0], UP, screen);
+							DeleteMino(NEXT_X, NEXT2_Y, NextMino[1], UP, screen);
+							DeleteMino(NEXT_X, NEXT3_Y, NextMino[2], UP, screen);
+							DeleteMino(NEXT_X, NEXT4_Y, NextMino[3], UP, screen);
+							DeleteMino(NEXT_X, NEXT5_Y, NextMino[4], UP, screen);
+							DeleteMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
+							erase_shadow(screen);
+							IsMinoFalling = false;
+						}
+						for (int i = 0; i < 20; i++) {
+							Hold[i] = MyMemory->hold[i];
+							NextMino[i] = MyMemory->nextmino[i];
+						}
+						SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
+						free(MyMemory);
+					}
+
+				}
 			}
 			gotoxy(0, 0);
 			print_screen(screen);
 		}
 
 		Clear_Line(screen);
+		MyStack_Push(MyHead, Hold, NextMino, fallingmino, screen);
 
 		{
 			DeleteMino(NEXT_X, NEXT1_Y, NextMino[0], UP, screen);
@@ -510,6 +575,7 @@ void game(int screen[][100], int screen_save[][100], struct FallingMino* falling
 				//printf("%d에서 NULL이 발견되었습니다.", &NextMino);
 			}
 		}
+
 	}
 
 	return;
@@ -521,7 +587,7 @@ unsigned _stdcall Thread_Ingame(void* arg)
 	while (IsGamePlaying)
 	{
 		Sleep(700);
-		Drop_Mino(&fallingmino, screen, screen_save);
+		Drop_Mino(&fallingmino, screen);
 		if (All_Clear == 1)
 			All_Clear++;
 		else if (All_Clear == 2)
@@ -533,6 +599,71 @@ unsigned _stdcall Thread_Ingame(void* arg)
 	}
 
 	return 0;
+}
+
+
+struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead)
+{
+	struct MyMemoryType* LastElement = MyHead->next;
+	for (int i = 0; i < MyHead->count; i++)
+		LastElement = LastElement->next;
+	MyHead->count--;
+
+	return LastElement;
+}
+
+
+void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], struct FallingMino* fallingmino, int screen[][100])
+{
+	struct MyMemoryType* LastElement = MyHead->next;
+
+	for (int i = 0; i < MyHead->count; i++)
+		LastElement = LastElement->next;
+
+	MyHead->count++;
+
+	LastElement->next = (struct MyMemoryType*)malloc(sizeof(struct MyMemoryType));
+
+	if (LastElement->next == NULL)
+	{
+		printf("동적 메모리 할당에 실패했습니다.");
+		exit(NULL);
+	}
+
+	LastElement->next->fallingmino = fallingmino;
+	for (int i = 0; i < 20; i++) {
+		LastElement->next->hold[i] = Hold[i];
+		LastElement->next->nextmino[i] = NextMino[i];
+	}
+	LastElement->next->IsHolded = IsHolded;
+	for (int i = SCREEN_START_Y; i <= SCREEN_END_Y; i++) {
+		for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
+			LastElement->next->screen[i][j] = screen[i][j];
+	}
+
+	return;
+}
+
+
+struct MyHeadType* MakeStack()
+{
+	struct MyHeadType* MyHead = (struct MyHeadType*)malloc(sizeof(struct MyHeadType));
+	if (MyHead == NULL)
+	{
+		printf("동적 메모리 할당에 실패했습니다.");
+		exit(NULL);
+	}
+	MyHead->count = 0;
+	MyHead->next = NULL;
+
+	MyHead->next = (struct MyMemoryType*)malloc(sizeof(struct MyMemoryType));
+	if (MyHead->next == NULL)
+	{
+		printf("동적 메모리 할당에 실패했습니다.");
+		exit(NULL);
+	}
+	MyHead->next->next = NULL;
+	return MyHead;
 }
 
 
@@ -4652,7 +4783,7 @@ void game_over(int screen[][100])
 	Sleep(100);
 
 	FILE* fp = fopen("game_over.txt", "r");
-	load_map(fp, screen, screen_save);
+	load_map(fp, screen);
 	fclose(fp);
 
 	gotoxy(0, 0);
@@ -5319,7 +5450,7 @@ void Hard_Drop(struct FallingMino* fallingmino, int screen[][100])
 }
 
 
-void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100], int screen_save[][100])
+void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100])
 {
 
 	bool flag = true;
@@ -5717,7 +5848,7 @@ void Clear_Line(int screen[][100])
 }
 
 
-void Drop_Mino(struct FallingMino* fallingmino, int screen[][100], int screen_save[][100])
+void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
 {
 
 	bool flag = true;
@@ -6229,6 +6360,8 @@ void Drop_Mino(struct FallingMino* fallingmino, int screen[][100], int screen_sa
 
 			if (IsSpace) return;
 
+			if (fallingmino->shape != memory) return;
+
 			IsMinoFalling = false;
 			IsHolded = false;
 			//SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
@@ -6586,10 +6719,10 @@ void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][1
 }
 
 
-void main_screen(int screen[][100], int screen_save[][100])
+void main_screen(struct MyHeadType* MyHead, int screen[][100])
 {
 	FILE* fp = fopen("main.txt", "r");
-	load_map(fp, screen, screen_save);
+	load_map(fp, screen);
 	fclose(fp);
 
 	gotoxy(0, 0);
@@ -6690,8 +6823,9 @@ void main_screen(int screen[][100], int screen_save[][100])
 
 			}
 			else if (selected == 3)//exit game
-			{
-				exit(0);
+			{ 
+				free(MyHead);
+				exit(NULL);
 			}
 			else
 			{
@@ -7546,7 +7680,7 @@ void print_screen(int screen[][100])
 }
 
 
-void load_map(FILE* fp, int screen[][100], int screen_save[][100])
+void load_map(FILE* fp, int screen[][100])
 {
 	char c[100];
 
@@ -7565,15 +7699,6 @@ void load_map(FILE* fp, int screen[][100], int screen_save[][100])
 				screen[i][j / 2] = c[j] - '0';
 		}
 	}
-
-	for (int i = 0; i < 100; i++)
-	{
-		for (int j = 0; j < 100; j++)
-		{
-			screen_save[i][j] = screen[i][j];
-		}
-	}
-
 	return;
 }
 
