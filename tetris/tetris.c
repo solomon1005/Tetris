@@ -510,15 +510,14 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 				}
 				else if (c == 26)
 				{
-					if (MyHead->count < 2)
-						continue;
+					if (MyHead->count < 2) continue;
 					struct MyMemoryType* MyMemory = MyStack_Pop(MyHead);
 					free(MyMemory);
 					MyMemory = MyStack_Pop(MyHead);
 					if (MyMemory != NULL)
 					{
 						IsHolded = MyMemory->IsHolded;
-						for (int i = 0; i <= SCREEN_END_Y; i++) {
+						for (int i = SCREEN_START_Y; i <= SCREEN_END_Y; i++) {
 							for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
 								screen[i][j] = MyMemory->screen[i][j];
 						}
@@ -540,9 +539,6 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 						}
 						SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
 						free(MyMemory);
-						gotoxy(0, 0);
-						print_screen(screen);
-						continue;
 					}
 
 				}
@@ -640,7 +636,7 @@ void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], s
 		LastElement->next->nextmino[i] = NextMino[i];
 	}
 	LastElement->next->IsHolded = IsHolded;
-	for (int i = 0; i <= SCREEN_END_Y; i++) {
+	for (int i = SCREEN_START_Y; i <= SCREEN_END_Y; i++) {
 		for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
 			LastElement->next->screen[i][j] = screen[i][j];
 	}
@@ -2389,11 +2385,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 				break;
 			case LEFT:
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 0, fallingmino.shape, UP, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 0, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = UP;
+					fallingmino.direction = LEFT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
@@ -2408,11 +2404,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 1, fallingmino.shape, UP, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 1, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = UP;
+					fallingmino.direction = LEFT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 1;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
@@ -2427,11 +2423,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x + 0, fallingmino.mino_y - 2, fallingmino.shape, UP, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x + 0, fallingmino.mino_y - 2, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = UP;
+					fallingmino.direction = LEFT;
 					fallingmino.mino_x += 0;
 					fallingmino.mino_y += -2;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
@@ -2446,11 +2442,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y - 2, fallingmino.shape, UP, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y - 2, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = UP;
+					fallingmino.direction = LEFT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += -2;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
