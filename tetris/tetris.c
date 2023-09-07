@@ -8,7 +8,6 @@
 //버그 픽스
 //버그 픽스
 //버그 픽스
-//버그 픽스
 //배포!
 
 
@@ -857,7 +856,6 @@ bool IsMinoSetHere(int mino_x, int mino_y, int shape, int direction, int screen[
 
 struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][100])
 {
-	//톡에 보내 놓은 것 처럼 순서대로 체크하는 것 만들기
 	DeleteMino(fallingmino.mino_x, fallingmino.mino_y, fallingmino.shape, fallingmino.direction, screen);
 
 	bool flag = false;
@@ -4065,15 +4063,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 2;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[3] = fallingmino.mino_y + 2;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
@@ -4084,15 +4082,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += -1;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 2;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[3] = fallingmino.mino_y + 2;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
@@ -4103,15 +4101,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += 0;
 					fallingmino.mino_y += 2;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 2;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[3] = fallingmino.mino_y + 2;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
@@ -4122,15 +4120,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 2;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 2;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[3] = fallingmino.mino_y + 2;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 				break;
