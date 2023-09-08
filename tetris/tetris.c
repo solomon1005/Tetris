@@ -7,7 +7,6 @@
 //버그 픽스
 //버그 픽스
 //버그 픽스
-//버그 픽스
 //배포!
 
 
@@ -221,13 +220,13 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 
 	gotoxy(0, 0);
 	print_screen(screen);
-	MyStack_Push(MyHead, Hold, NextMino, fallingmino, screen);
 
 
 	for (int i = 0; i < 20; i++) Hold[i] = '\0';
 
 	CreateNextMino(NextMino, true);
 	CreateNextMino(NextMino, false);
+	MyStack_Push(MyHead, Hold, NextMino, fallingmino, screen);
 	SummonMino(fallingmino, NextMino, screen);
 	erase_shadow(screen);
 	shadow_mino(*fallingmino, screen);
@@ -247,6 +246,9 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 	SetMino(NEXT_X, NEXT5_Y, NextMino[4], UP, screen);
 
 	srand((unsigned int)time(NULL) + 10);
+
+	while (_kbhit()) c = _getch();
+	c = '\0';
 
 	_beginthreadex(NULL, 0, Thread_Ingame, 0, 0, NULL);
 
@@ -2383,11 +2385,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 				break;
 			case LEFT:
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 0, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 0, fallingmino.shape, UP, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = LEFT;
+					fallingmino.direction = UP;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
@@ -2402,11 +2404,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 1, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 1, fallingmino.shape, UP, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = LEFT;
+					fallingmino.direction = UP;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 1;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
@@ -2421,11 +2423,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x + 0, fallingmino.mino_y - 2, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x + 0, fallingmino.mino_y - 2, fallingmino.shape, UP, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = LEFT;
+					fallingmino.direction = UP;
 					fallingmino.mino_x += 0;
 					fallingmino.mino_y += -2;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
@@ -2440,11 +2442,11 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y - 2, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y - 2, fallingmino.shape, UP, screen);
 
 				if (flag)
 				{
-					fallingmino.direction = LEFT;
+					fallingmino.direction = UP;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += -2;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
