@@ -518,7 +518,7 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 					if (MyMemory != NULL)
 					{
 						IsHolded = MyMemory->IsHolded;
-						for (int i = SCREEN_START_Y; i <= SCREEN_END_Y; i++) {
+						for (int i = 0; i <= SCREEN_END_Y; i++) {
 							for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
 								screen[i][j] = MyMemory->screen[i][j];
 						}
@@ -637,7 +637,7 @@ void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], s
 		LastElement->next->nextmino[i] = NextMino[i];
 	}
 	LastElement->next->IsHolded = IsHolded;
-	for (int i = SCREEN_START_Y; i <= SCREEN_END_Y; i++) {
+	for (int i = 0; i <= SCREEN_END_Y; i++) {
 		for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
 			LastElement->next->screen[i][j] = screen[i][j];
 	}
