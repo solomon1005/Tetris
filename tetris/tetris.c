@@ -3,6 +3,7 @@
 //메인 화면 -  최고 점수, 게임 모드(40line, blits, zen)선택 
 //미노가 일정 높이 이상 올라오면 다음 미노 위치 표시하기
 //bgm, 효과음 넣기 - (입브금? tetr.io? 뿌요뿌요?)
+//t스핀 시 왼쪽에 띄우기
 //버그 픽스
 //버그 픽스
 //버그 픽스
@@ -105,6 +106,8 @@ struct MyMemoryType
 	char nextmino[20];
 	bool IsHolded;
 	struct MyMemoryType* next;
+	int combo;
+	int cleared_line;
 };
 
 struct MyHeadType
@@ -172,12 +175,15 @@ bool IsHolded = false;
 bool IsGamePlaying = true;
 bool IsRetry = false;
 bool IsInstantRetry = false;
+bool RollBack = false;
 int All_Clear = 0;
 int screen[100][100] = { 0 };
 struct FallingMino fallingmino;
 char Hold[20] = { '\0' };
 char NextMino[20] = { '\0' };
 int drop_count = 50;
+int cleared_line = 0;
+int combo = 0;
 
 
 int main()
@@ -509,7 +515,7 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 					game_over(screen);
 					return;
 				}
-				else if (c == 26)
+				else if (c == 26)// Ctrl + z
 				{
 					if (MyHead->count < 2) continue;
 					struct MyMemoryType* MyMemory = MyStack_Pop(MyHead);
@@ -517,6 +523,7 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 					MyMemory = MyStack_Pop(MyHead);
 					if (MyMemory != NULL)
 					{
+						RollBack = true;
 						IsHolded = MyMemory->IsHolded;
 						for (int i = 0; i <= SCREEN_END_Y; i++) {
 							for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
@@ -538,6 +545,8 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 							Hold[i] = MyMemory->hold[i];
 							NextMino[i] = MyMemory->nextmino[i];
 						}
+						combo = MyMemory->combo;
+						cleared_line = MyMemory->cleared_line;
 						SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
 						free(MyMemory);
 					}
@@ -548,8 +557,9 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 			print_screen(screen);
 		}
 
-		Clear_Line(screen);
+		if(!RollBack) Clear_Line(screen);
 		MyStack_Push(MyHead, Hold, NextMino, fallingmino, screen);
+		RollBack = false;
 
 		{
 			DeleteMino(NEXT_X, NEXT1_Y, NextMino[0], UP, screen);
@@ -641,7 +651,8 @@ void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], s
 		for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
 			LastElement->next->screen[i][j] = screen[i][j];
 	}
-
+	LastElement->next->combo = combo;
+	LastElement->next->cleared_line = cleared_line;
 	return;
 }
 
@@ -5440,7 +5451,6 @@ void Hard_Drop(struct FallingMino* fallingmino, int screen[][100])
 				return;
 			SetMino(fallingmino->mino_x, fallingmino->mino_y + i - 1, fallingmino->shape, fallingmino->direction, screen);
 			IsHolded = false;
-			Clear_Line(screen);
 			SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
 			IsMinoFalling = false;
 			break;
@@ -5806,8 +5816,9 @@ void Clear_Line(int screen[][100])
 {
 
 	bool flag = true;
+	int line_cnt = 0;
 
-	for (int j = SCREEN_END_Y; j >= 1; j--)
+	for (int j = SCREEN_END_Y; j >= 0; j--)
 	{
 		flag = true;
 		for (int i = SCREEN_START_X; i <= SCREEN_END_X; i++)
@@ -5818,6 +5829,7 @@ void Clear_Line(int screen[][100])
 
 		if (flag)
 		{
+			line_cnt++;
 			for (int k = j; k >= 1; k--)
 			{
 				for (int i = SCREEN_START_X; i <= SCREEN_END_X; i++)
@@ -5827,13 +5839,29 @@ void Clear_Line(int screen[][100])
 						screen[k][i] = 2;
 				}
 			}
+			for (int k = SCREEN_START_X; k <= SCREEN_END_X; k++)
+				screen[0][k] = 0;
 			j++;
 		}
 	}
 
+	if (cleared_line % 10 == 0) cleared_line = 0;
+
+	if (line_cnt)
+	{
+		if (cleared_line % 10 >= 0) combo++;
+		else combo = 0;
+		cleared_line = line_cnt * 10 + 1;
+	}
+	else
+	{
+		combo = -1;
+	}
+
+	cleared_line--;
 	flag = true;
 
-	for (int j = SCREEN_END_Y; j >= 1; j--)
+	for (int j = SCREEN_END_Y; j >= 0; j--)
 	{
 		for (int i = SCREEN_START_X; i <= SCREEN_END_X; i++)
 		{
@@ -7360,7 +7388,7 @@ void print_screen(int screen[][100])
 					printf("HELP");   
 					j += 1;   
 					break;   
-				case 'a' - '0':
+				case 'a':
 					printf(" EXIT GAME");   
 					j += 4;   
 					break;   
@@ -7489,6 +7517,55 @@ void print_screen(int screen[][100])
 					textcolor(0x0088);   
 					printf("■ ");   
 					textcolor(0x000F);   
+					break;
+				case 'c':
+					switch (cleared_line / 10)
+					{
+					case 1:
+						printf("SINGLE");
+						j += 2;
+						break;
+					case 2:
+						printf("DOUBLE");
+						j += 2;
+						break;
+					case 3:
+						printf("TRIPLE");
+						j += 2;
+						break;
+					case 4:
+						printf(" QUAD ");
+						j += 2;
+						break;
+					default:
+						printf("  ");
+						break;
+					}
+					break;
+				case 'C':
+					switch (combo)
+					{
+					case -1:
+					case 0:
+						printf("  ");
+						break;
+					default:
+						printf(" %2d COMBO ", combo);
+						j += 4;
+						break;
+					}
+					break;
+				case 'A':
+					if (All_Clear)
+					{
+						printf(" ALL CLEAR");
+						j += 4;
+					}
+					else
+					{
+						printf("  ");
+					}
+					break;
 				default:
 					break;   
 				}
@@ -7538,7 +7615,7 @@ void print_screen(int screen[][100])
 					printf("HELP");   
 					j += 1;   
 					break;   
-				case 'a' - '0':
+				case 'a':
 					printf(" EXIT GAME");   
 					j += 4;   
 					break;   
@@ -7667,6 +7744,55 @@ void print_screen(int screen[][100])
 					textcolor(0x0088);   
 					printf("■ ");   
 					textcolor(0x00F0);
+					break;
+				case 'c':
+					switch (cleared_line / 10)
+					{
+					case 1:
+						printf("SINGLE");
+						j += 2;
+						break;
+					case 2:
+						printf("DOUBLE");
+						j += 2;
+						break;
+					case 3:
+						printf("TRIPLE");
+						j += 2;
+						break;
+					case 4:
+						printf(" QUAD ");
+						j += 2;
+						break;
+					default:
+						printf("  ");
+						break;
+					}
+					break;
+				case 'C':
+					switch (combo)
+					{
+					case -1:
+					case 0:
+						printf("  ");
+						break;
+					default:
+						printf(" %2d COMBO ", combo);
+						j += 4;
+						break;						
+					}
+					break;
+				case 'A':
+					if (All_Clear)
+					{
+						printf(" ALL CLEAR");
+						j += 4;
+					}
+					else
+					{
+						printf("  ");
+					}
+					break;
 				default:
 					break;   
 				}
@@ -7684,7 +7810,7 @@ void load_map(FILE* fp, int screen[][100])
 {
 	char c[100];
 
-	for (int i = 0; i < 24; i++)
+	for (int i = 0; i < 24; i++)              
 	{
 		fgets(c, 100, fp);
 		for (int j = 0; j < 51; j += 2)
@@ -7694,6 +7820,8 @@ void load_map(FILE* fp, int screen[][100])
 			else if (c[j] == '#')
 				screen[i][j / 2] = 0;
 			else if (c[j] >= 65 && c[j] <= 91)
+				screen[i][j / 2] = c[j];
+			else if (c[j] >= 97 && c[j] <= 123)
 				screen[i][j / 2] = c[j];
 			else
 				screen[i][j / 2] = c[j] - '0';
