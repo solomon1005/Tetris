@@ -177,6 +177,7 @@ bool IsRetry = false;
 bool IsInstantRetry = false;
 bool RollBack = false;
 int All_Clear = 0;
+int softDropVal = 100;
 int screen[100][100] = { 0 };
 struct FallingMino fallingmino;
 char Hold[20] = { '\0' };
@@ -288,7 +289,9 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 					case 80://아
 						DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
 						bool flag = true;
-						while (flag) {
+
+						for (int k = 0; k < softDropVal && flag; k++)
+						{
 							for (int i = 1; i <= 4; i++)
 							{
 								switch (fallingmino->direction)
