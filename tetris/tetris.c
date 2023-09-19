@@ -3,8 +3,6 @@
 //메인 화면 -  최고 점수, 게임 모드(40line, blits, zen)선택 
 //미노가 일정 높이 이상 올라오면 다음 미노 위치 표시하기
 //bgm, 효과음 넣기 - (입브금? tetr.io? 뿌요뿌요?)
-//t스핀 시 왼쪽에 띄우기
-//버그 픽스
 //버그 픽스
 //버그 픽스
 //버그 픽스
@@ -176,6 +174,9 @@ bool IsGamePlaying = true;
 bool IsRetry = false;
 bool IsInstantRetry = false;
 bool RollBack = false;
+int T_Spin = 0;
+bool T_Spin_Mini = false;
+bool T_Spin_Print = false;
 int All_Clear = 0;
 int softDropVal = 100;
 int screen[100][100] = { 0 };
@@ -185,6 +186,9 @@ char NextMino[20] = { '\0' };
 int drop_count = 50;
 int cleared_line = 0;
 int combo = 0;
+int score = 0;
+int best_score = 0;
+int num_lines = 0;
 
 
 int main()
@@ -204,7 +208,12 @@ int main()
 			struct MyMemoryType* MyMemory = MyStack_Pop(MyHead);
 			free(MyMemory);
 		}
-
+		num_lines = 0;
+		cleared_line = 0;
+		T_Spin = 0;
+		T_Spin_Mini = T_Spin_Print = false;
+		All_Clear = 0;
+		score = 0;
 	}
 
 	return 0;
@@ -2485,12 +2494,12 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 			{
 			case UP:
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 0, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x + 1, fallingmino.mino_y + 0, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
 					fallingmino.direction = LEFT;
-					fallingmino.mino_x += -1;
+					fallingmino.mino_x += +1;
 					fallingmino.mino_y += 0;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
@@ -2504,12 +2513,12 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y + 1, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x + 1, fallingmino.mino_y + 1, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
 					fallingmino.direction = LEFT;
-					fallingmino.mino_x += -1;
+					fallingmino.mino_x += +1;
 					fallingmino.mino_y += 1;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
@@ -2523,13 +2532,13 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x + 0, fallingmino.mino_y - 2, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x + 0, fallingmino.mino_y + 2, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
 					fallingmino.direction = LEFT;
 					fallingmino.mino_x += 0;
-					fallingmino.mino_y += -2;
+					fallingmino.mino_y += +2;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
@@ -2542,13 +2551,13 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
-				flag = IsMinoSetHere(fallingmino.mino_x - 1, fallingmino.mino_y - 2, fallingmino.shape, LEFT, screen);
+				flag = IsMinoSetHere(fallingmino.mino_x + 1, fallingmino.mino_y + 2, fallingmino.shape, LEFT, screen);
 
 				if (flag)
 				{
 					fallingmino.direction = LEFT;
-					fallingmino.mino_x += -1;
-					fallingmino.mino_y += -2;
+					fallingmino.mino_x += +1;
+					fallingmino.mino_y += +2;
 					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
 					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
@@ -2811,6 +2820,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
@@ -2889,6 +2899,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = DOWN;
 					fallingmino.mino_x += 1;
 					fallingmino.mino_y += 0;
@@ -2967,6 +2978,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = LEFT;
 					fallingmino.mino_x += 1;
 					fallingmino.mino_y += 0;
@@ -3045,6 +3057,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = UP;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
@@ -3131,6 +3144,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = LEFT;
 					fallingmino.mino_x += 1;
 					fallingmino.mino_y += 0;
@@ -3209,6 +3223,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = UP;
 					fallingmino.mino_x += 1;
 					fallingmino.mino_y += 0;
@@ -3287,6 +3302,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
@@ -3365,6 +3381,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 
 				if (flag)
 				{
+					T_Spin_Mini = true;
 					fallingmino.direction = DOWN;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
@@ -5427,6 +5444,20 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 		fallingmino = Spin(fallingmino, count, screen);
 	}
 
+	if (fallingmino.shape == 'T')
+	{
+		if ((int)(screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != 0 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != 2 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != SHADOW) + (int)(screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != 0 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != 2 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != SHADOW) + (int)(screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != 0 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != 2 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != SHADOW) + (int)(screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != 0 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != 2 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != SHADOW) >= 3)
+		{
+			T_Spin = 2;
+		}
+		else
+		{
+			T_Spin = 0;
+			T_Spin_Mini = 0;
+			T_Spin_Print = 0;
+		}
+	}
+
 	shadow_mino(fallingmino, screen);
 	SetMino(fallingmino.mino_x, fallingmino.mino_y, fallingmino.shape, fallingmino.direction, screen);
 
@@ -5832,6 +5863,7 @@ void Clear_Line(int screen[][100])
 
 		if (flag)
 		{
+			num_lines++;
 			line_cnt++;
 			for (int k = j; k >= 1; k--)
 			{
@@ -5848,6 +5880,17 @@ void Clear_Line(int screen[][100])
 		}
 	}
 
+	if (T_Spin)
+	{
+		T_Spin_Print = true;
+		T_Spin--;
+	}
+	else
+	{
+		T_Spin_Print = false;
+		T_Spin_Mini = false;
+	}
+
 	if (cleared_line % 10 == 0) cleared_line = 0;
 
 	if (line_cnt)
@@ -5855,11 +5898,33 @@ void Clear_Line(int screen[][100])
 		if (cleared_line % 10 >= 0) combo++;
 		else combo = 0;
 		cleared_line = line_cnt * 10 + 1;
+		switch (line_cnt)
+		{
+		case 1:
+			score += 100;
+			if (T_Spin) score += 200;
+			break;
+		case 2:
+			score += 200;
+			if (T_Spin) score += 600;
+			break;
+		case 3:
+			score += 400;
+			if (T_Spin) score += 1200;
+			break;
+		case 4:
+			score += 800;
+			break;
+		default:
+			break;
+		}
 	}
 	else
 	{
 		combo = -1;
 	}
+
+	score += (combo / 2) * 150;
 
 	cleared_line--;
 	flag = true;
@@ -5874,6 +5939,7 @@ void Clear_Line(int screen[][100])
 	}
 
 	All_Clear = 1;
+	score += 2000;
 
 	return;
 }
@@ -7341,7 +7407,6 @@ void gotoxy(int x, int y) {
 
 void print_screen(int screen[][100])
 {
-	//All_Clear 값에 따라 색 반전 시키기.
 	for (int i = 0; i < 24; i++)
 	{
 		for (int j = 0; j < 26; j++)
@@ -7569,6 +7634,43 @@ void print_screen(int screen[][100])
 						printf("  ");
 					}
 					break;
+				case 't':
+					if (T_Spin && T_Spin_Print)
+					{
+						textcolor(0x000D);
+						if (T_Spin_Mini)
+						{
+							printf("t-spin mini ");
+							j += 5;
+						}
+						else
+						{
+							printf("  t-spin");
+							j += 3;
+						}
+						textcolor(0x000F);
+					}
+					else
+					{
+						printf("  ");
+					}
+					break;
+				case 'l':
+					printf(" lines: ");
+					j += 3;
+					break;
+				case 'm':
+					printf("%4d", num_lines);
+					j += 1;
+					break;
+				case 's':
+					printf(" score: ");
+					j += 3;
+					break;
+				case 'u':
+					printf("%8d", score);
+					j += 3;
+					break;
 				default:
 					break;   
 				}
@@ -7795,6 +7897,43 @@ void print_screen(int screen[][100])
 					{
 						printf("  ");
 					}
+					break;
+				case 't':
+					if (T_Spin && T_Spin_Print)
+					{
+						textcolor(0x000D);
+						if (T_Spin_Mini)
+						{
+							printf("T-spin mini ");
+							j += 5;
+						}
+						else
+						{
+							printf(" T-spin ");
+							j += 3;
+						}
+						textcolor(0x000F);
+					}
+					else
+					{
+						printf("  ");
+					}
+					break;
+				case 'l':
+					printf(" lines: ");
+					j += 3;
+					break;
+				case 'm':
+					printf("%4d", num_lines);
+					j += 1;
+					break;
+				case 's':
+					printf(" score: ");
+					j += 3;
+					break;
+				case 'u':
+					printf("%8d", score);
+					j += 3;
 					break;
 				default:
 					break;   
