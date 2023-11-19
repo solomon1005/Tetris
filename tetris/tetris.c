@@ -20,6 +20,11 @@
 #include <stdbool.h>
 #include <process.h>
 #include <string.h>
+#include <mmsystem.h>
+#include <Digitalv.h>
+
+#pragma comment(lib,"winmm.lib")
+
 
 #define HOLD_X 2
 #define HOLD_Y 7
@@ -59,31 +64,6 @@
 #define SHADOW_J 16
 #define SHADOW_L 17
 
-//map - 24 * 24
-//0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-//1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1
-//1 3 4 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 5 6 0 0 0 1
-//1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1
-//1 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 0 0 0 0 1
-//1 0 # # # 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//1 0 # # # 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//1 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 0 0 0 0 1
-//1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 0 0 0 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 0 0 0 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 0 0 0 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 # # # 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 0 0 0 0 0 1
-//0 0 0 0 0 0 1 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1
-//0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0
 
 
 struct FallingMino
@@ -106,6 +86,11 @@ struct MyMemoryType
 	struct MyMemoryType* next;
 	int combo;
 	int cleared_line;
+	int score;
+	int num_lines;
+	int T_Spin;
+	bool T_Spin_Mini;
+	bool T_Spin_Print;
 };
 
 struct MyHeadType
@@ -166,6 +151,9 @@ void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], s
 
 struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead);
 
+void Pause();
+
+
 
 char minos[7] = { 'I', 'S', 'Z', 'O', 'T', 'J', 'L' };
 bool IsMinoFalling = false;
@@ -173,6 +161,7 @@ bool IsHolded = false;
 bool IsGamePlaying = true;
 bool IsRetry = false;
 bool IsInstantRetry = false;
+bool GamePause = false;
 bool RollBack = false;
 int T_Spin = 0;
 bool T_Spin_Mini = false;
@@ -180,6 +169,7 @@ bool T_Spin_Print = false;
 int All_Clear = 0;
 int softDropVal = 100;
 int screen[100][100] = { 0 };
+int screen1[100][100];
 struct FallingMino fallingmino;
 char Hold[20] = { '\0' };
 char NextMino[20] = { '\0' };
@@ -190,9 +180,49 @@ int score = 0;
 int best_score = 0;
 int num_lines = 0;
 
+MCI_OPEN_PARMS bgm;
+MCI_OPEN_PARMS game_single;
+MCI_OPEN_PARMS game_double;
+MCI_OPEN_PARMS game_triple;
+MCI_OPEN_PARMS game_tetris;
+MCI_OPEN_PARMS game_perpect;
+MCI_OPEN_PARMS game_move;
+int dwID_bgm;
+int dwID_single;
+int dwID_double;
+int dwID_triple;
+int dwID_tetris;
+int dwID_perpect;
+int dwID_move;
+
+
+
+void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat) {
+
+	soundEffect->lpstrElementName = filePath;//파일 오픈
+	soundEffect->lpstrDeviceType = "mpegvideo";//mp3 형식
+	*dwID = soundEffect->wDeviceID;
+	mciSendCommand(0, MCI_OPEN, MCI_OPEN_ELEMENT | MCI_OPEN_TYPE, (DWORD)(LPVOID)&*soundEffect);
+	if (playing) {
+		if (repeat) {
+			mciSendCommand(*dwID, MCI_PLAY, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID) & *soundEffect); //음악 반복 재생
+		}
+		else {
+			mciSendCommand(*dwID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL); //음원 재생 위치를 처음으로 초기화
+			mciSendCommand(*dwID, MCI_PLAY, MCI_NOTIFY, (DWORD)(LPVOID)&*soundEffect);	//음악 한 번만 재생
+		}
+	}
+	else {
+		mciSendCommand(*dwID, MCI_PAUSE, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID)&*soundEffect);	//음악 재생 중지
+		mciSendCommand(*dwID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL); //음원 재생 위치를 처음으로 초기화
+	}
+	return;
+}
+
 
 int main()
 {
+
 	CursorView();
 
 	struct MyHeadType* MyHead = MakeStack();
@@ -222,6 +252,14 @@ int main()
 
 void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType* MyHead)
 {
+
+	soundEffect("game_single.mp3", &game_single, &dwID_single, true, false);
+	soundEffect("game_double.mp3", &game_double, &dwID_double, true, false);
+	soundEffect("game_triple.mp3", &game_triple, &dwID_triple, true, false);
+	soundEffect("game_tetris.mp3", &game_tetris, &dwID_tetris, true, false);
+	soundEffect("game_perfect.mp3", &game_perpect, &dwID_perpect, true, false);
+	soundEffect("game_move.mp3", &game_move, &dwID_move, true, false);
+	//soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, true, true);
 	IsGamePlaying = true;
 	IsMinoFalling = false;
 	IsHolded = false;
@@ -559,10 +597,22 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 						}
 						combo = MyMemory->combo;
 						cleared_line = MyMemory->cleared_line;
+
+						score = MyMemory->score;
+						num_lines = MyMemory->num_lines;
+
+						T_Spin = MyMemory->T_Spin;
+						T_Spin_Mini = MyMemory->T_Spin_Mini;
+						T_Spin_Print = MyMemory->T_Spin_Print;
+
 						SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
 						free(MyMemory);
 					}
 
+				}
+				else if (c == 27)//esc
+				{
+					Pause();
 				}
 			}
 			gotoxy(0, 0);
@@ -609,6 +659,10 @@ unsigned _stdcall Thread_Ingame(void* arg)
 {
 	while (IsGamePlaying)
 	{
+		if (GamePause)
+		{
+			continue;
+		}
 		Sleep(700);
 		Drop_Mino(&fallingmino, screen);
 		if (All_Clear == 1)
@@ -622,6 +676,36 @@ unsigned _stdcall Thread_Ingame(void* arg)
 	}
 
 	return 0;
+}
+
+
+void Pause()
+{
+	GamePause = true;
+	int selected = 1;
+
+	FILE* fp = fopen("pause.txt", "r");
+	load_map(fp, screen1);
+	fclose(fp);
+	gotoxy(0, 0);
+	print_screen(screen1);
+	while (1)
+	{
+		if (_kbhit)
+		{
+			char c = _getch();
+			if (c == ' ')
+			{
+				if (selected == 1)
+				{
+					GamePause = false;
+					break;
+				}
+			}
+		}
+	}
+
+	return;
 }
 
 
@@ -650,7 +734,7 @@ void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], s
 	if (LastElement->next == NULL)
 	{
 		printf("동적 메모리 할당에 실패했습니다.");
-		exit(NULL);
+		exit(0);
 	}
 
 	LastElement->next->fallingmino = fallingmino;
@@ -665,6 +749,11 @@ void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], s
 	}
 	LastElement->next->combo = combo;
 	LastElement->next->cleared_line = cleared_line;
+	LastElement->next->score = score;
+	LastElement->next->num_lines = num_lines;
+	LastElement->next->T_Spin = T_Spin;
+	LastElement->next->T_Spin_Mini = T_Spin_Mini;
+	LastElement->next->T_Spin_Print = T_Spin_Print;
 	return;
 }
 
@@ -675,7 +764,7 @@ struct MyHeadType* MakeStack()
 	if (MyHead == NULL)
 	{
 		printf("동적 메모리 할당에 실패했습니다.");
-		exit(NULL);
+		exit(0);
 	}
 	MyHead->count = 0;
 	MyHead->next = NULL;
@@ -684,7 +773,7 @@ struct MyHeadType* MakeStack()
 	if (MyHead->next == NULL)
 	{
 		printf("동적 메모리 할당에 실패했습니다.");
-		exit(NULL);
+		exit(0);
 	}
 	MyHead->next->next = NULL;
 	return MyHead;
@@ -3473,15 +3562,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 0;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 2;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
-					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
+					fallingmino.piece_x[4] = fallingmino.mino_x + 1;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
-					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[2] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
@@ -3492,15 +3581,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += -1;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 2;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
-					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
+					fallingmino.piece_x[4] = fallingmino.mino_x + 1;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
-					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[2] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
@@ -3511,15 +3600,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += 0;
 					fallingmino.mino_y += 2;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 2;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
-					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
+					fallingmino.piece_x[4] = fallingmino.mino_x + 1;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
-					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[2] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 
@@ -3530,15 +3619,15 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 					fallingmino.direction = RIGHT;
 					fallingmino.mino_x += -1;
 					fallingmino.mino_y += 2;
-					fallingmino.piece_x[1] = fallingmino.mino_x + 0;
-					fallingmino.piece_x[2] = fallingmino.mino_x + 0;
+					fallingmino.piece_x[1] = fallingmino.mino_x + 1;
+					fallingmino.piece_x[2] = fallingmino.mino_x + 2;
 					fallingmino.piece_x[3] = fallingmino.mino_x + 1;
-					fallingmino.piece_x[4] = fallingmino.mino_x + 2;
+					fallingmino.piece_x[4] = fallingmino.mino_x + 1;
 
 					fallingmino.piece_y[1] = fallingmino.mino_y + 0;
-					fallingmino.piece_y[2] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[2] = fallingmino.mino_y + 0;
 					fallingmino.piece_y[3] = fallingmino.mino_y + 1;
-					fallingmino.piece_y[4] = fallingmino.mino_y + 1;
+					fallingmino.piece_y[4] = fallingmino.mino_y + 2;
 					drop_count = drop_count < 30 ? 30 : drop_count; return fallingmino;
 				}
 				break;
@@ -4811,6 +4900,7 @@ void game_over(int screen[][100])
 		return;
 	}
 
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false);
 	Sleep(100);
 
 	FILE* fp = fopen("game_over.txt", "r");
@@ -5444,6 +5534,8 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 		fallingmino = Spin(fallingmino, count, screen);
 	}
 
+
+
 	if (fallingmino.shape == 'T')
 	{
 		if ((int)(screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != 0 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != 2 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != SHADOW) + (int)(screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != 0 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != 2 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != SHADOW) + (int)(screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != 0 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != 2 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != SHADOW) + (int)(screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != 0 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != 2 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != SHADOW) >= 3)
@@ -5460,6 +5552,9 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 
 	shadow_mino(fallingmino, screen);
 	SetMino(fallingmino.mino_x, fallingmino.mino_y, fallingmino.shape, fallingmino.direction, screen);
+	if (fallingmino.shape == 'T' && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 1] == 0 || screen[fallingmino.mino_y + 2][fallingmino.mino_x + 1] == 2 || screen[fallingmino.mino_y + 2][fallingmino.mino_x + 1] == SHADOW)
+		T_Spin_Mini = true;
+	T_Spin_Print = 0;
 
 	return fallingmino;
 }
@@ -5668,6 +5763,7 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 			fallingmino->mino_x--;
 			shadow_mino(*fallingmino, screen);
 			SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false);
 		}
 	}
 	else if (direction == RIGHT)
@@ -5839,6 +5935,7 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 			fallingmino->mino_x++;
 			shadow_mino(*fallingmino, screen);
 			SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false);
 		}
 	}
 
@@ -5849,6 +5946,7 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 void Clear_Line(int screen[][100])
 {
 
+	T_Spin_Print = 1;
 	bool flag = true;
 	int line_cnt = 0;
 
@@ -5903,17 +6001,21 @@ void Clear_Line(int screen[][100])
 		case 1:
 			score += 100;
 			if (T_Spin) score += 200;
+			soundEffect("game_single.mp3", &game_single, &dwID_single, true, false);
 			break;
 		case 2:
 			score += 200;
 			if (T_Spin) score += 600;
+			soundEffect("game_double.mp3", &game_double, &dwID_double, true, false);
 			break;
 		case 3:
 			score += 400;
 			if (T_Spin) score += 1200;
+			soundEffect("game_triple.mp3", &game_triple, &dwID_triple, true, false);
 			break;
 		case 4:
 			score += 800;
+			soundEffect("game_tetris.mp3", &game_tetris, &dwID_tetris, true, false);
 			break;
 		default:
 			break;
@@ -5939,6 +6041,7 @@ void Clear_Line(int screen[][100])
 	}
 
 	All_Clear = 1;
+	soundEffect("game_perfect.mp3", &game_perpect, &dwID_perpect, true, false);
 	score += 2000;
 
 	return;
@@ -6818,6 +6921,8 @@ void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][1
 
 void main_screen(struct MyHeadType* MyHead, int screen[][100])
 {
+
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false);
 	FILE* fp = fopen("main.txt", "r");
 	load_map(fp, screen);
 	fclose(fp);
@@ -6922,7 +7027,7 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 			else if (selected == 3)//exit game
 			{ 
 				free(MyHead);
-				exit(NULL);
+				exit(0);
 			}
 			else
 			{
@@ -6938,7 +7043,7 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 void textcolor(int ColorNum)
 {
 	HANDLE _stdcall stdhandle = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(stdhandle, ColorNum);	
+	SetConsoleTextAttribute(stdhandle, ColorNum);
 	return;
 }
 
@@ -7671,6 +7776,9 @@ void print_screen(int screen[][100])
 					printf("%8d", score);
 					j += 3;
 					break;
+				case 'b':
+					printf("continue");
+					j += 3;
 				default:
 					break;   
 				}
@@ -7935,6 +8043,9 @@ void print_screen(int screen[][100])
 					printf("%8d", score);
 					j += 3;
 					break;
+				case 'b':
+					printf("continue");
+					j += 3;
 				default:
 					break;   
 				}
