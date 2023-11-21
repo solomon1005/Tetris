@@ -1,8 +1,6 @@
 ﻿//고쳐야 할 것
-// 
+// softdrop 함수 따로 만들어서, 바닥에 붙이고 소프트드랍했을 때 다음 미노가 하드드롭되는 현상 해결하기.
 //메인 화면 -  최고 점수, 게임 모드(40line, blits, zen)선택 
-//미노가 일정 높이 이상 올라오면 다음 미노 위치 표시하기
-//bgm, 효과음 넣기 - (입브금? tetr.io? 뿌요뿌요?)
 //버그 픽스
 //버그 픽스
 //버그 픽스
@@ -154,6 +152,8 @@ struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead);
 void Pause();
 
 
+void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat, bool load);
+
 
 char minos[7] = { 'I', 'S', 'Z', 'O', 'T', 'J', 'L' };
 bool IsMinoFalling = false;
@@ -167,7 +167,7 @@ int T_Spin = 0;
 bool T_Spin_Mini = false;
 bool T_Spin_Print = false;
 int All_Clear = 0;
-int softDropVal = 100;
+int softDropVal = 1;
 int screen[100][100] = { 0 };
 int screen1[100][100];
 struct FallingMino fallingmino;
@@ -181,51 +181,94 @@ int best_score = 0;
 int num_lines = 0;
 
 MCI_OPEN_PARMS bgm;
+MCI_OPEN_PARMS game_count;
 MCI_OPEN_PARMS game_single;
 MCI_OPEN_PARMS game_double;
 MCI_OPEN_PARMS game_triple;
 MCI_OPEN_PARMS game_tetris;
-MCI_OPEN_PARMS game_perpect;
+MCI_OPEN_PARMS game_perfect;
 MCI_OPEN_PARMS game_move;
+MCI_OPEN_PARMS game_hold;
+MCI_OPEN_PARMS game_harddrop;
+MCI_OPEN_PARMS game_softdrop;
+MCI_OPEN_PARMS game_rotate;
+MCI_OPEN_PARMS game_landing;
+MCI_OPEN_PARMS system_ok;
+MCI_OPEN_PARMS system_select;
+
 int dwID_bgm;
+int dwID_count;
 int dwID_single;
 int dwID_double;
 int dwID_triple;
 int dwID_tetris;
-int dwID_perpect;
+int dwID_perfect;
 int dwID_move;
+int dwID_hold;
+int dwID_harddrop;
+int dwID_softdrop;
+int dwID_rotate;
+int dwID_landing;
+int dwID_ok;
+int dwID_select;
 
 
 
-void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat) {
+void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat, bool load) {
 
 	soundEffect->lpstrElementName = filePath;//파일 오픈
 	soundEffect->lpstrDeviceType = "mpegvideo";//mp3 형식
 	*dwID = soundEffect->wDeviceID;
 	mciSendCommand(0, MCI_OPEN, MCI_OPEN_ELEMENT | MCI_OPEN_TYPE, (DWORD)(LPVOID)&*soundEffect);
-	if (playing) {
-		if (repeat) {
-			mciSendCommand(*dwID, MCI_PLAY, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID) & *soundEffect); //음악 반복 재생
+
+	if (!load)
+	{
+		if (playing) {
+			if (repeat) {
+				mciSendCommand(*dwID, MCI_PLAY, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID) & *soundEffect); //음악 반복 재생
+			}
+			else {
+				mciSendCommand(*dwID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL); //음원 재생 위치를 처음으로 초기화
+				mciSendCommand(*dwID, MCI_PLAY, MCI_NOTIFY, (DWORD)(LPVOID) & *soundEffect);	//음악 한 번만 재생
+			}
 		}
 		else {
+			mciSendCommand(*dwID, MCI_PAUSE, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID) & *soundEffect);	//음악 재생 중지
 			mciSendCommand(*dwID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL); //음원 재생 위치를 처음으로 초기화
-			mciSendCommand(*dwID, MCI_PLAY, MCI_NOTIFY, (DWORD)(LPVOID)&*soundEffect);	//음악 한 번만 재생
 		}
 	}
-	else {
-		mciSendCommand(*dwID, MCI_PAUSE, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID)&*soundEffect);	//음악 재생 중지
-		mciSendCommand(*dwID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL); //음원 재생 위치를 처음으로 초기화
-	}
+	return;
+}
+
+
+void soundLoad()
+{
+	soundEffect("game_count.mp3", &game_count, &dwID_count, true, false, true);
+	soundEffect("game_single.mp3", &game_single, &dwID_single, true, false, true);
+	soundEffect("game_double.mp3", &game_double, &dwID_double, true, false, true);
+	soundEffect("game_triple.mp3", &game_triple, &dwID_triple, true, false, true);
+	soundEffect("game_tetris.mp3", &game_tetris, &dwID_tetris, true, false, true);
+	soundEffect("game_perfect.mp3", &game_perfect, &dwID_perfect, true, false, true);
+	soundEffect("game_move.mp3", &game_move, &dwID_move, true, false, true);
+	soundEffect("game_hold.mp3", &game_hold, &dwID_hold, true, false, true);
+	soundEffect("game_harddrop.mp3", &game_harddrop, &dwID_harddrop, true, false, true);
+	soundEffect("game_softdrop.mp3", &game_softdrop, &dwID_softdrop, true, false, true);
+	soundEffect("game_rotate.mp3", &game_rotate, &dwID_rotate, true, false, true);
+	soundEffect("game_landing.mp3", &game_landing, &dwID_landing, true, false, true);
+	soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, true);
+	soundEffect("sys_select.mp3", &system_select, &dwID_select, true, false, true);
+
 	return;
 }
 
 
 int main()
 {
-
 	CursorView();
 
 	struct MyHeadType* MyHead = MakeStack();
+
+	soundLoad();
 
 	while (1)
 	{
@@ -252,19 +295,10 @@ int main()
 
 void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType* MyHead)
 {
-
-	soundEffect("game_single.mp3", &game_single, &dwID_single, true, false);
-	soundEffect("game_double.mp3", &game_double, &dwID_double, true, false);
-	soundEffect("game_triple.mp3", &game_triple, &dwID_triple, true, false);
-	soundEffect("game_tetris.mp3", &game_tetris, &dwID_tetris, true, false);
-	soundEffect("game_perfect.mp3", &game_perpect, &dwID_perpect, true, false);
-	soundEffect("game_move.mp3", &game_move, &dwID_move, true, false);
-	//soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, true, true);
-	IsGamePlaying = true;
+	IsGamePlaying = true; 
 	IsMinoFalling = false;
 	IsHolded = false;
 	IsRetry = false;
-	IsInstantRetry = false;
 	char c = '\0';
 	for (int i = 0; i < 20; i++) NextMino[i] = '\0';
 
@@ -273,7 +307,6 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 	fclose(fp);
 
 	gotoxy(0, 0);
-	print_screen(screen);
 
 
 	for (int i = 0; i < 20; i++) Hold[i] = '\0';
@@ -281,9 +314,27 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 	CreateNextMino(NextMino, true);
 	CreateNextMino(NextMino, false);
 	MyStack_Push(MyHead, Hold, NextMino, fallingmino, screen);
+
+	srand((unsigned int)time(NULL) + 10);
+
+	while (_kbhit()) c = _getch();
+	c = '\0';
+
+	print_screen(screen);
+
+	if (!IsInstantRetry) {
+		Sleep(2000);
+		soundEffect("game_count.mp3", &game_count, &dwID_count, true, false, false);
+		Sleep(1000);
+		soundEffect("game_count.mp3", &game_count, &dwID_count, true, false, false);
+		Sleep(1000);
+		soundEffect("game_count.mp3", &game_count, &dwID_count, true, false, false);
+		Sleep(1000);
+	}
+	
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, true, true, false);
+	
 	SummonMino(fallingmino, NextMino, screen);
-	erase_shadow(screen);
-	shadow_mino(*fallingmino, screen);
 	if (NextMino[4] == '\0')
 	{
 		for (int i = 4; i < 14; i++)
@@ -298,11 +349,11 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 	SetMino(NEXT_X, NEXT3_Y, NextMino[2], UP, screen);
 	SetMino(NEXT_X, NEXT4_Y, NextMino[3], UP, screen);
 	SetMino(NEXT_X, NEXT5_Y, NextMino[4], UP, screen);
+	erase_shadow(screen);
+	shadow_mino(*fallingmino, screen);
 
-	srand((unsigned int)time(NULL) + 10);
 
-	while (_kbhit()) c = _getch();
-	c = '\0';
+	IsInstantRetry = false;
 
 	_beginthreadex(NULL, 0, Thread_Ingame, 0, 0, NULL);
 
@@ -331,9 +382,11 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 						Move_Mino(fallingmino, RIGHT, screen);
 						break;
 					case 72://위
+						soundEffect("game_rotate.mp3", &game_rotate, &dwID_rotate, true, false, false);
 						*fallingmino = Turn_Right(*fallingmino, 1, screen);
 						break;
 					case 80://아
+						soundEffect("game_softdrop.mp3", &game_softdrop, &dwID_softdrop, true, false, false);
 						DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
 						bool flag = true;
 
@@ -509,6 +562,7 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 				}
 				else if ((c == 'c' || c == 'C') && !IsHolded)
 				{
+					soundEffect("game_hold.mp3", &game_hold, &dwID_hold, true, false, false);
 					IsHolded = true;
 					erase_shadow(screen);
 					DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
@@ -543,18 +597,22 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 				}
 				else if (c == ' ')
 				{
+					soundEffect("game_harddrop.mp3", &game_harddrop, &dwID_harddrop, true, false, false);
 					Hard_Drop(fallingmino, screen);
 				}
 				else if (c == 'z' || c == 'Z')
 				{
+					soundEffect("game_rotate.mp3", &game_rotate, &dwID_rotate, true, false, false);
 					*fallingmino = Turn_Right(*fallingmino, 3, screen);
 				}
 				else if (c == 'x' || c == 'X')
 				{
+					soundEffect("game_rotate.mp3", &game_rotate, &dwID_rotate, true, false, false);
 					*fallingmino = Turn_Right(*fallingmino, 1, screen);
 				}
 				else if (c == 'a' || c == 'A')
 				{
+					soundEffect("game_rotate.mp3", &game_rotate, &dwID_rotate, true, false, false);
 					*fallingmino = Turn_Right(*fallingmino, 2, screen);
 				}
 				else if (c == 'r' || c == 'R')
@@ -663,18 +721,23 @@ unsigned _stdcall Thread_Ingame(void* arg)
 		{
 			continue;
 		}
-		Sleep(700);
+		Sleep(250);
 		Drop_Mino(&fallingmino, screen);
-		if (All_Clear == 1)
-			All_Clear++;
-		else if (All_Clear == 2)
-			All_Clear++;
-		else if (All_Clear == 3)
-			All_Clear++;
-		else if (All_Clear == 4)
-			All_Clear = 0;
 	}
 
+	return 0;
+}
+
+unsigned _stdcall Thread_AllClear(void* arg)
+{
+	Sleep(750);
+	All_Clear++;
+	Sleep(750);
+	All_Clear++;
+	Sleep(750);
+	All_Clear++;
+	Sleep(750);
+	All_Clear = 0;
 	return 0;
 }
 
@@ -4900,7 +4963,7 @@ void game_over(int screen[][100])
 		return;
 	}
 
-	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false);
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false, false);
 	Sleep(100);
 
 	FILE* fp = fopen("game_over.txt", "r");
@@ -5563,6 +5626,7 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 void Hard_Drop(struct FallingMino* fallingmino, int screen[][100])
 {
 
+	soundEffect("game_landing.mp3", &game_landing, &dwID_landing, true, false, false);
 	bool flag = false;
 	char memory = fallingmino->shape;
 
@@ -5754,6 +5818,7 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 
 		if (flag)
 		{
+			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false, false);
 			erase_shadow(screen);
 			DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
 			for (int i = 1; i <= 4; i++)
@@ -5763,7 +5828,6 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 			fallingmino->mino_x--;
 			shadow_mino(*fallingmino, screen);
 			SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
-			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false);
 		}
 	}
 	else if (direction == RIGHT)
@@ -5926,6 +5990,7 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 
 		if (flag)
 		{
+			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false, false);
 			erase_shadow(screen);
 			DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
 			for (int i = 1; i <= 4; i++)
@@ -5935,7 +6000,6 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 			fallingmino->mino_x++;
 			shadow_mino(*fallingmino, screen);
 			SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
-			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false);
 		}
 	}
 
@@ -6001,21 +6065,21 @@ void Clear_Line(int screen[][100])
 		case 1:
 			score += 100;
 			if (T_Spin) score += 200;
-			soundEffect("game_single.mp3", &game_single, &dwID_single, true, false);
+			soundEffect("game_single.mp3", &game_single, &dwID_single, true, false, false);
 			break;
 		case 2:
 			score += 200;
 			if (T_Spin) score += 600;
-			soundEffect("game_double.mp3", &game_double, &dwID_double, true, false);
+			soundEffect("game_double.mp3", &game_double, &dwID_double, true, false, false);
 			break;
 		case 3:
 			score += 400;
 			if (T_Spin) score += 1200;
-			soundEffect("game_triple.mp3", &game_triple, &dwID_triple, true, false);
+			soundEffect("game_triple.mp3", &game_triple, &dwID_triple, true, false, false);
 			break;
 		case 4:
 			score += 800;
-			soundEffect("game_tetris.mp3", &game_tetris, &dwID_tetris, true, false);
+			soundEffect("game_tetris.mp3", &game_tetris, &dwID_tetris, true, false, false);
 			break;
 		default:
 			break;
@@ -6041,7 +6105,8 @@ void Clear_Line(int screen[][100])
 	}
 
 	All_Clear = 1;
-	soundEffect("game_perfect.mp3", &game_perpect, &dwID_perpect, true, false);
+	_beginthreadex(NULL, 0, Thread_AllClear, 0, 0, NULL);
+	soundEffect("game_perfect.mp3", &game_perfect, &dwID_perfect, true, false, false);
 	score += 2000;
 
 	return;
@@ -6922,7 +6987,7 @@ void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][1
 void main_screen(struct MyHeadType* MyHead, int screen[][100])
 {
 
-	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false);
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false, false);
 	FILE* fp = fopen("main.txt", "r");
 	load_map(fp, screen);
 	fclose(fp);
@@ -6998,6 +7063,7 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 		switch (c)
 		{
 		case -32:
+			soundEffect("sys_select.mp3", &system_select, &dwID_select, true, false, false);
 			c = _getch();
 			switch (c)
 			{
@@ -7012,6 +7078,7 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 			}
 			break;
 		case ' ':
+			soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, false);
 			if (selected == 0)//game start
 			{
 				return;
