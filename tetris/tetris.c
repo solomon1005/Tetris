@@ -20,6 +20,7 @@
 #include <string.h>
 #include <mmsystem.h>
 #include <Digitalv.h>
+#include "system.h"
 
 #pragma comment(lib,"winmm.lib")
 
@@ -36,11 +37,6 @@
 #define START_X 10
 #define START_Y 0
 
-#define SCREEN_START_X 7
-#define SCREEN_START_Y 3
-#define SCREEN_END_X 16
-#define SCREEN_END_Y 22
-
 #define UP 0
 #define RIGHT 1
 #define DOWN 2
@@ -53,14 +49,6 @@
 #define T 5
 #define J 6
 #define L 7
-#define SHADOW 10
-#define SHADOW_I 11
-#define SHADOW_S 12
-#define SHADOW_Z 13
-#define SHADOW_O 14
-#define SHADOW_T 15
-#define SHADOW_J 16
-#define SHADOW_L 17
 
 
 
@@ -72,6 +60,12 @@ struct FallingMino
 	int piece_y[10];
 	char shape;
 	int direction;
+};
+
+struct MyHeadType
+{
+	int count;
+	struct MyMemoryType* next;
 };
 
 struct MyMemoryType
@@ -91,29 +85,14 @@ struct MyMemoryType
 	bool T_Spin_Print;
 };
 
-struct MyHeadType
-{
-	int count;
-	struct MyMemoryType* next;
-};
 
 
-
-void print_screen(int screen[][100]);
-
-void load_map(FILE* fp, int screen[][100]);
-
-void CursorView();
-
-void gotoxy(int x, int y);
 
 void main_screen(struct MyHeadType* MyHead, int screen[][100]);
 
 void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType* MyHead);
 
 unsigned _stdcall Thread_Ingame(void* arg);
-
-void textcolor(int ColorNum);
 
 void SetMino(int x, int y, char shape, int direction, int screen[][100]);
 
@@ -143,30 +122,20 @@ bool IsMinoSetHere(int mino_x, int mino_y, int shape, int direction, int screen[
 
 struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][100]);
 
-struct MyHeadType* MakeStack();
-
-void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], struct FallingMino* fallingmino, int screen[][100]);
-
-struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead);
-
 void Pause();
 
+void softDrop(struct FallingMino* fallingmino, int screen[][100]);
 
 void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat, bool load);
 
 
 char minos[7] = { 'I', 'S', 'Z', 'O', 'T', 'J', 'L' };
 bool IsMinoFalling = false;
-bool IsHolded = false;
 bool IsGamePlaying = true;
 bool IsRetry = false;
 bool IsInstantRetry = false;
 bool GamePause = false;
 bool RollBack = false;
-int T_Spin = 0;
-bool T_Spin_Mini = false;
-bool T_Spin_Print = false;
-int All_Clear = 0;
 int softDropVal = 1;
 int screen[100][100] = { 0 };
 int screen1[100][100];
@@ -174,11 +143,7 @@ struct FallingMino fallingmino;
 char Hold[20] = { '\0' };
 char NextMino[20] = { '\0' };
 int drop_count = 50;
-int cleared_line = 0;
-int combo = 0;
-int score = 0;
 int best_score = 0;
-int num_lines = 0;
 
 MCI_OPEN_PARMS bgm;
 MCI_OPEN_PARMS game_count;
@@ -387,174 +352,7 @@ void game(int screen[][100], struct FallingMino* fallingmino, struct MyHeadType*
 						break;
 					case 80://아
 						soundEffect("game_softdrop.mp3", &game_softdrop, &dwID_softdrop, true, false, false);
-						DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
-						bool flag = true;
-
-						for (int k = 0; k < softDropVal && flag; k++)
-						{
-							for (int i = 1; i <= 4; i++)
-							{
-								switch (fallingmino->direction)
-								{
-								case UP:
-									switch (fallingmino->shape)
-									{
-									case 'I':
-										flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'S':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'Z':
-										flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'O':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'T':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'J':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'L':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									default:
-										break;
-									}
-									break;
-								case RIGHT:
-									switch (fallingmino->shape)
-									{
-									case 'I':
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'S':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'Z':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'O':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'T':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'J':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'L':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									default:
-										break;
-									}
-									break;
-								case LEFT:
-									switch (fallingmino->shape)
-									{
-									case 'I':
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'S':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'Z':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'O':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'T':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'J':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'L':
-										flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									default:
-										break;
-									}
-									break;
-								case DOWN:
-									switch (fallingmino->shape)
-									{
-									case 'I':
-										flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'S':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'Z':
-										flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'O':
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'T':
-										flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'J':
-										flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									case 'L':
-										flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
-										flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
-										break;
-									default:
-										break;
-									}
-									break;
-								}
-							}
-							if (flag)
-								Drop_Mino(fallingmino, screen);
-						}
-
-						SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+						softDrop(fallingmino, screen);
 						break;
 					default:
 						break;
@@ -742,6 +540,187 @@ unsigned _stdcall Thread_AllClear(void* arg)
 }
 
 
+void softDrop(struct FallingMino* fallingmino, int screen[][100])
+{
+	DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+	bool flag = true;
+
+	for (int k = 0; k < softDropVal && flag; k++)
+	{
+		for (int i = 1; i <= 4; i++)
+		{
+			switch (fallingmino->direction)
+			{
+			case UP:
+				switch (fallingmino->shape)
+				{
+				case 'I':
+					flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'S':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'Z':
+					flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'O':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'T':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'J':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'L':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				default:
+					break;
+				}
+				break;
+			case RIGHT:
+				switch (fallingmino->shape)
+				{
+				case 'I':
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'S':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'Z':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'O':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'T':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'J':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'L':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				default:
+					break;
+				}
+				break;
+			case LEFT:
+				switch (fallingmino->shape)
+				{
+				case 'I':
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'S':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'Z':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'O':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'T':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'J':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'L':
+					flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				default:
+					break;
+				}
+				break;
+			case DOWN:
+				switch (fallingmino->shape)
+				{
+				case 'I':
+					flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'S':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'Z':
+					flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'O':
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'T':
+					flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'J':
+					flag = flag && (screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 0 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == 2 || screen[fallingmino->piece_y[1] + 1][fallingmino->piece_x[1]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				case 'L':
+					flag = flag && (screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 0 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == 2 || screen[fallingmino->piece_y[2] + 1][fallingmino->piece_x[2]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 0 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == 2 || screen[fallingmino->piece_y[3] + 1][fallingmino->piece_x[3]] == SHADOW);
+					flag = flag && (screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 0 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == 2 || screen[fallingmino->piece_y[4] + 1][fallingmino->piece_x[4]] == SHADOW);
+					break;
+				default:
+					break;
+				}
+				break;
+			}
+		}
+		if (flag)
+		{
+			fallingmino->mino_y += 1;
+			for (int i = 1; i <= 4; i++)
+			{
+				fallingmino->piece_y[i] += 1;
+			}
+		}
+	}
+
+	SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+
+	return;
+}
+
+
 void Pause()
 {
 	GamePause = true;
@@ -769,77 +748,6 @@ void Pause()
 	}
 
 	return;
-}
-
-
-struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead)
-{
-	struct MyMemoryType* LastElement = MyHead->next;
-	for (int i = 0; i < MyHead->count; i++)
-		LastElement = LastElement->next;
-	MyHead->count--;
-
-	return LastElement;
-}
-
-
-void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], struct FallingMino* fallingmino, int screen[][100])
-{
-	struct MyMemoryType* LastElement = MyHead->next;
-
-	for (int i = 0; i < MyHead->count; i++)
-		LastElement = LastElement->next;
-
-	MyHead->count++;
-
-	LastElement->next = (struct MyMemoryType*)malloc(sizeof(struct MyMemoryType));
-
-	if (LastElement->next == NULL)
-	{
-		printf("동적 메모리 할당에 실패했습니다.");
-		exit(0);
-	}
-
-	LastElement->next->fallingmino = fallingmino;
-	for (int i = 0; i < 20; i++) {
-		LastElement->next->hold[i] = Hold[i];
-		LastElement->next->nextmino[i] = NextMino[i];
-	}
-	LastElement->next->IsHolded = IsHolded;
-	for (int i = 0; i <= SCREEN_END_Y; i++) {
-		for (int j = SCREEN_START_X; j <= SCREEN_END_X; j++)
-			LastElement->next->screen[i][j] = screen[i][j];
-	}
-	LastElement->next->combo = combo;
-	LastElement->next->cleared_line = cleared_line;
-	LastElement->next->score = score;
-	LastElement->next->num_lines = num_lines;
-	LastElement->next->T_Spin = T_Spin;
-	LastElement->next->T_Spin_Mini = T_Spin_Mini;
-	LastElement->next->T_Spin_Print = T_Spin_Print;
-	return;
-}
-
-
-struct MyHeadType* MakeStack()
-{
-	struct MyHeadType* MyHead = (struct MyHeadType*)malloc(sizeof(struct MyHeadType));
-	if (MyHead == NULL)
-	{
-		printf("동적 메모리 할당에 실패했습니다.");
-		exit(0);
-	}
-	MyHead->count = 0;
-	MyHead->next = NULL;
-
-	MyHead->next = (struct MyMemoryType*)malloc(sizeof(struct MyMemoryType));
-	if (MyHead->next == NULL)
-	{
-		printf("동적 메모리 할당에 실패했습니다.");
-		exit(0);
-	}
-	MyHead->next->next = NULL;
-	return MyHead;
 }
 
 
@@ -5625,7 +5533,6 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 
 void Hard_Drop(struct FallingMino* fallingmino, int screen[][100])
 {
-
 	soundEffect("game_landing.mp3", &game_landing, &dwID_landing, true, false, false);
 	bool flag = false;
 	char memory = fallingmino->shape;
@@ -5644,8 +5551,8 @@ void Hard_Drop(struct FallingMino* fallingmino, int screen[][100])
 				return;
 			SetMino(fallingmino->mino_x, fallingmino->mino_y + i - 1, fallingmino->shape, fallingmino->direction, screen);
 			IsHolded = false;
-			SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
 			IsMinoFalling = false;
+			SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
 			break;
 		}
 	}
@@ -6631,7 +6538,6 @@ void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
 			IsHolded = false;
 			//SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
 			SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);//색넣기
-			Hard_Drop(fallingmino, screen);
 
 		}
 	}
@@ -6878,6 +6784,8 @@ void DeleteMino(int x, int y, char shape, int direction, int screen[][100])
 
 void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][100])
 {
+	IsMinoFalling = true;
+
 	switch (NextMino[0])
 	{
 	case 'I':
@@ -6968,8 +6876,6 @@ void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][1
 			return;
 		}
 	}
-
-	IsMinoFalling = true;
 	fallingmino->mino_x = START_X;
 	fallingmino->mino_y = START_Y;
 	shadow_mino(*fallingmino, screen);
@@ -7106,14 +7012,6 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 	return;
 }
 //공사중 
-
-void textcolor(int ColorNum)
-{
-	HANDLE _stdcall stdhandle = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(stdhandle, ColorNum);
-	return;
-}
-
 
 void SetMino(int x, int y, char shape, int direction, int screen[][100])
 {
@@ -7566,597 +7464,5 @@ void CreateNextMino(char NextMino[], bool IsFirstCreate)
 
 		}
 	}
-	return;
-}
-
-
-void gotoxy(int x, int y) {
-	COORD pos = { x,y };
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
-	return;
-}
-
-
-void print_screen(int screen[][100])
-{
-	for (int i = 0; i < 24; i++)
-	{
-		for (int j = 0; j < 26; j++)
-		{
-			if (All_Clear % 2 == 0)
-			{
-				switch (screen[i][j])
-				{
-				case 0:
-					printf("  ");   
-					break;   
-				case 1:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case 2:
-					textcolor(0x0008);   
-					printf(". ");   
-					textcolor(0x000F);   
-					break;   
-				case 3:
-					printf(" HOLD ");   
-					j += 2;   
-					break;   
-				case 4:
-					printf(" NEXT ");   
-					j += 2;   
-					break;   
-				case 5:
-					printf(" EXIT TO MAIN MENU");   
-					j += 8;   
-					break;   
-				case 6:
-					printf(" RETRY");   
-					j += 2;   
-					break;   
-				case 7:
-					printf(" GAME START ");   
-					j += 5;   
-					break;   
-				case 8:
-					printf("SETTINGS");   
-					j += 3;   
-					break;   
-				case 9:
-					printf("HELP");   
-					j += 1;   
-					break;   
-				case 'a':
-					printf(" EXIT GAME");   
-					j += 4;   
-					break;   
-				case 'I':
-					if (j >= 18)
-					{
-						textcolor(0x00BB);   
-						gotoxy(37, i);   
-						printf("■ ■ ■ ■ ");   
-						j += 3;   
-						textcolor(0x000F);   
-						printf(" ");   
-					}
-					else if (j <= 5)
-					{
-						textcolor(0x00BB);   
-						gotoxy(3, i);   
-						printf("■ ■ ■ ■ ");   
-						j += 3;   
-						textcolor(0x000F);   
-						printf(" ");   
-					}
-					else
-					{
-						textcolor(0x00BB);   
-						printf("■ ");   
-						textcolor(0x000F);   
-					}
-					break;   
-				case 'S':
-					textcolor(0x00AA);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case 'Z':
-					textcolor(0x00CC);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case 'O':
-					if (j >= 18)
-					{
-						gotoxy(37, i);   
-						printf("  ");   
-						textcolor(0x00EE);   
-						printf("■ ■ ");   
-						j += 2;   
-						textcolor(0x000F);   
-						printf("   ");   
-					}
-					else if (j <= 5)
-					{
-						gotoxy(3, i);   
-						printf("  ");   
-						textcolor(0x00EE);   
-						printf("■ ■ ");   
-						j += 2;   
-						textcolor(0x000F);   
-						printf("   ");   
-					}
-					else
-					{
-						textcolor(0x00EE);   
-						printf("■ ");   
-						textcolor(0x000F);   
-					}
-					break;   
-				case 'T':
-					textcolor(0x00DD);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case 'J':
-					textcolor(0x0099);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case 'L':
-					textcolor(0x0066);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case SHADOW_I:
-					textcolor(0x0088);   
-					gotoxy(3, i);   
-					printf("■ ■ ■ ■ ");   
-					j += 3;   
-					textcolor(0x000F);   
-					printf(" ");   
-					break;   
-				case SHADOW_S:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case SHADOW_Z:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case SHADOW_O:
-					gotoxy(3, i);   
-					printf("  ");   
-					textcolor(0x0088);   
-					printf("■ ■ ");   
-					j += 2;   
-					textcolor(0x000F);   
-					printf("   ");   
-					break;   
-				case SHADOW_T:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case SHADOW_J:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case SHADOW_L:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;   
-				case SHADOW:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x000F);   
-					break;
-				case 'c':
-					switch (cleared_line / 10)
-					{
-					case 1:
-						printf("SINGLE");
-						j += 2;
-						break;
-					case 2:
-						printf("DOUBLE");
-						j += 2;
-						break;
-					case 3:
-						printf("TRIPLE");
-						j += 2;
-						break;
-					case 4:
-						printf(" QUAD ");
-						j += 2;
-						break;
-					default:
-						printf("  ");
-						break;
-					}
-					break;
-				case 'C':
-					switch (combo)
-					{
-					case -1:
-					case 0:
-						printf("  ");
-						break;
-					default:
-						printf(" %2d COMBO ", combo);
-						j += 4;
-						break;
-					}
-					break;
-				case 'A':
-					if (All_Clear)
-					{
-						printf(" ALL CLEAR");
-						j += 4;
-					}
-					else
-					{
-						printf("  ");
-					}
-					break;
-				case 't':
-					if (T_Spin && T_Spin_Print)
-					{
-						textcolor(0x000D);
-						if (T_Spin_Mini)
-						{
-							printf("t-spin mini ");
-							j += 5;
-						}
-						else
-						{
-							printf("  t-spin");
-							j += 3;
-						}
-						textcolor(0x000F);
-					}
-					else
-					{
-						printf("  ");
-					}
-					break;
-				case 'l':
-					printf(" lines: ");
-					j += 3;
-					break;
-				case 'm':
-					printf("%4d", num_lines);
-					j += 1;
-					break;
-				case 's':
-					printf(" score: ");
-					j += 3;
-					break;
-				case 'u':
-					printf("%8d", score);
-					j += 3;
-					break;
-				case 'b':
-					printf("continue");
-					j += 3;
-				default:
-					break;   
-				}
-			}
-			else
-			{
-				switch (screen[i][j])
-				{
-				case 0:
-					printf("  ");   
-					break;   
-				case 1:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case 2:
-					textcolor(0x00F8);
-					printf(". ");   
-					textcolor(0x00F0);
-					break;   
-				case 3:
-					printf(" HOLD ");   
-					j += 2;   
-					break;   
-				case 4:
-					printf(" NEXT ");   
-					j += 2;   
-					break;   
-				case 5:
-					printf(" EXIT TO MAIN MENU");   
-					j += 8;   
-					break;   
-				case 6:
-					printf(" RETRY");   
-					j += 2;   
-					break;   
-				case 7:
-					printf(" GAME START ");   
-					j += 5;   
-					break;   
-				case 8:
-					printf("SETTINGS");   
-					j += 3;   
-					break;   
-				case 9:
-					printf("HELP");   
-					j += 1;   
-					break;   
-				case 'a':
-					printf(" EXIT GAME");   
-					j += 4;   
-					break;   
-				case 'I':
-					if (j >= 18)
-					{
-						textcolor(0x00BB);   
-						gotoxy(37, i);   
-						printf("■ ■ ■ ■ ");   
-						j += 3;   
-						textcolor(0x00F0);
-						printf(" ");   
-					}
-					else if (j <= 5)
-					{
-						textcolor(0x00BB);   
-						gotoxy(3, i);   
-						printf("■ ■ ■ ■ ");   
-						j += 3;   
-						textcolor(0x00F0);
-						printf(" ");   
-					}
-					else
-					{
-						textcolor(0x00BB);   
-						printf("■ ");   
-						textcolor(0x00F0);
-					}
-					break;   
-				case 'S':
-					textcolor(0x00AA);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case 'Z':
-					textcolor(0x00CC);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case 'O':
-					if (j >= 18)
-					{
-						gotoxy(37, i);   
-						printf("  ");   
-						textcolor(0x00EE);   
-						printf("■ ■ ");   
-						j += 2;   
-						textcolor(0x00F0);
-						printf("   ");   
-					}
-					else if (j <= 5)
-					{
-						gotoxy(3, i);   
-						printf("  ");   
-						textcolor(0x00EE);   
-						printf("■ ■ ");   
-						j += 2;   
-						textcolor(0x00F0);
-						printf("   ");   
-					}
-					else
-					{
-						textcolor(0x00EE);   
-						printf("■ ");   
-						textcolor(0x00F0);
-					}
-					break;   
-				case 'T':
-					textcolor(0x00DD);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case 'J':
-					textcolor(0x0099);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case 'L':
-					textcolor(0x0066);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case SHADOW_I:
-					textcolor(0x0088);   
-					gotoxy(3, i);   
-					printf("■ ■ ■ ■ ");   
-					j += 3;   
-					textcolor(0x00F0);
-					printf(" ");   
-					break;   
-				case SHADOW_S:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case SHADOW_Z:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case SHADOW_O:
-					gotoxy(3, i);   
-					printf("  ");   
-					textcolor(0x0088);   
-					printf("■ ■ ");   
-					j += 2;   
-					textcolor(0x00F0);
-					printf("   ");   
-					break;   
-				case SHADOW_T:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case SHADOW_J:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case SHADOW_L:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;   
-				case SHADOW:
-					textcolor(0x0088);   
-					printf("■ ");   
-					textcolor(0x00F0);
-					break;
-				case 'c':
-					switch (cleared_line / 10)
-					{
-					case 1:
-						printf("SINGLE");
-						j += 2;
-						break;
-					case 2:
-						printf("DOUBLE");
-						j += 2;
-						break;
-					case 3:
-						printf("TRIPLE");
-						j += 2;
-						break;
-					case 4:
-						printf(" QUAD ");
-						j += 2;
-						break;
-					default:
-						printf("  ");
-						break;
-					}
-					break;
-				case 'C':
-					switch (combo)
-					{
-					case -1:
-					case 0:
-						printf("  ");
-						break;
-					default:
-						printf(" %2d COMBO ", combo);
-						j += 4;
-						break;						
-					}
-					break;
-				case 'A':
-					if (All_Clear)
-					{
-						printf(" ALL CLEAR");
-						j += 4;
-					}
-					else
-					{
-						printf("  ");
-					}
-					break;
-				case 't':
-					if (T_Spin && T_Spin_Print)
-					{
-						textcolor(0x000D);
-						if (T_Spin_Mini)
-						{
-							printf("T-spin mini ");
-							j += 5;
-						}
-						else
-						{
-							printf(" T-spin ");
-							j += 3;
-						}
-						textcolor(0x000F);
-					}
-					else
-					{
-						printf("  ");
-					}
-					break;
-				case 'l':
-					printf(" lines: ");
-					j += 3;
-					break;
-				case 'm':
-					printf("%4d", num_lines);
-					j += 1;
-					break;
-				case 's':
-					printf(" score: ");
-					j += 3;
-					break;
-				case 'u':
-					printf("%8d", score);
-					j += 3;
-					break;
-				case 'b':
-					printf("continue");
-					j += 3;
-				default:
-					break;   
-				}
-			}
-		}
-
-		printf("\n");
-	}
-
-	return;
-}
-
-
-void load_map(FILE* fp, int screen[][100])
-{
-	char c[100];
-
-	for (int i = 0; i < 24; i++)              
-	{
-		fgets(c, 100, fp);
-		for (int j = 0; j < 51; j += 2)
-		{
-			if (c[j] == '\n')
-				break;
-			else if (c[j] == '#')
-				screen[i][j / 2] = 0;
-			else if (c[j] >= 65 && c[j] <= 91)
-				screen[i][j / 2] = c[j];
-			else if (c[j] >= 97 && c[j] <= 123)
-				screen[i][j / 2] = c[j];
-			else
-				screen[i][j / 2] = c[j] - '0';
-		}
-	}
-	return;
-}
-
-
-void CursorView()
-{
-	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_CURSOR_INFO cursorInfo;
-	cursorInfo.bVisible = false;
-	cursorInfo.dwSize = 1;
-	SetConsoleCursorInfo(consoleHandle, &cursorInfo);
 	return;
 }
