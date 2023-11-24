@@ -1,28 +1,17 @@
 #include "system.h"
 
 
-struct MyHeadType
-{
-	int count;
-	struct MyMemoryType* next;
-};
+struct MyHeadType MyHead;
 
-struct MyMemoryType
-{
-	int screen[100][100];
-	struct FallingMino* fallingmino;
-	char hold[20];
-	char nextmino[20];
-	bool IsHolded;
-	struct MyMemoryType* next;
-	int combo;
-	int cleared_line;
-	int score;
-	int num_lines;
-	int T_Spin;
-	bool T_Spin_Mini;
-	bool T_Spin_Print;
-};
+
+MCI_OPEN_PARMS bgm;
+int dwID_bgm;
+
+MCI_OPEN_PARMS system_select;
+int dwID_select;
+
+MCI_OPEN_PARMS system_ok;
+int dwID_ok;
 
 int All_Clear = 0;
 int cleared_line = 0;
@@ -33,8 +22,23 @@ bool T_Spin_Print = false;
 int num_lines = 0;
 int score = 0;
 bool IsHolded = false;
-
-
+bool IsGamePlaying = true;
+bool IsRetry = false;
+bool IsInstantRetry = false;
+int screen1[100][100];
+bool GamePause = false;
+bool isZen = false;
+bool isBlitz = false;
+bool is40lines = false;
+int tutorial = 0;
+int isTutorial = 0;
+int bestScore = 0;
+int record = 0;
+int best_record = INT_MAX;
+int score_zen = 0;
+int bestScore_zen = 0;
+time_t startTime;
+time_t endTime;
 
 
 
@@ -312,8 +316,88 @@ void print_screen(int screen[][100])
 					j += 3;
 					break;
 				case 'b':
-					printf("continue");
+					printf("CONTINUE");
 					j += 3;
+					break;
+				case 'd':
+					printf(" RETURN TO MAIN ");
+					j += 7;
+					break;
+				case 'e':
+					printf("40 LINES");
+					j += 3;
+					break;
+				case 'f':
+					printf(" BLITZ");
+					j += 2;
+					break;
+				case 'g':
+					printf("ZEN ");
+					j += 1;
+					break;
+				case 'h':
+					if (isBlitz) {
+						printf(" SCORE:   %-10d", score);
+						j += 9;
+					}
+					else if (is40lines) {
+						printf("RECORD:   %-10d", record);
+						j += 9;
+					}
+					else{
+						printf(" SCORE:   %-10d", score_zen);
+						j += 9;
+					}
+					break;
+				case 'i':
+					if (isBlitz) {
+						if (bestScore < score) bestScore = score;
+						printf("BEST SCORE:   %-10d", bestScore);
+						j += 11;
+					}
+					else if (is40lines) {
+						if (best_record < record) best_record = record;
+						printf("BEST RECORD:   %-11d", best_record);
+						j += 12;
+					}
+					else {
+						if (bestScore_zen < score_zen) bestScore_zen = score_zen;
+						printf("BEST SCORE:   %-10d", bestScore_zen);
+						j += 11;
+					}
+					break;
+				case 'j':
+					printf("> CONTINUE <");
+					j += 5;
+					break;
+				case 'k':
+					printf("use [left arrow] to move mino left");
+					j += 16;
+					break;
+				case 'n':
+					printf("use [down arrow] to softdrop");
+					j += 13;
+					break;
+				case 'o':
+					printf("use [space] to harddrop ");
+					j += 11;
+					break;
+				case 'p':
+					printf("use [up arrow] / [x] to ");
+					j += 11;
+					break;
+				case 'v':
+					printf("rotate mino colckwise ");
+					j += 10;
+					break;
+				case 'q':
+					printf("use [z] to rotate mino countercolckwise ");
+					j += 19;
+					break;
+				case 'r':
+					printf("use [right arrow] to move mino right");
+					j += 17;
+					break;
 				default:
 					break;
 				}
@@ -579,8 +663,87 @@ void print_screen(int screen[][100])
 					j += 3;
 					break;
 				case 'b':
-					printf("continue");
+					printf("CONTINUE");
 					j += 3;
+				case 'd':
+					printf(" RETURN TO MAIN ");
+					j += 7;
+					break;
+				case 'e':
+					printf("40 LINES");
+					j += 3;
+					break;
+				case 'f':
+					printf(" BLITZ");
+					j += 2;
+					break;
+				case 'g':
+					printf("ZEN ");
+					j += 1;
+					break;
+				case 'h':
+					if (isBlitz) {
+						printf(" SCORE:   %-10d", score);
+						j += 9;
+					}
+					else if (is40lines) {
+						printf("RECORD:   %-10d", record);
+						j += 9;
+					}
+					else {
+						printf(" SCORE:   %-10d", score_zen);
+						j += 9;
+					}
+					break;
+				case 'i':
+					if (isBlitz) {
+						if (bestScore < score) bestScore = score;
+						printf("BEST SCORE:   %-10d", bestScore);
+						j += 11;
+					}
+					else if (is40lines) {
+						if (best_record < record) best_record = record;
+						printf("BEST RECORD:   %-11d", best_record);
+						j += 12;
+					}
+					else {
+						if (bestScore_zen < score_zen) bestScore_zen = score_zen;
+						printf("BEST SCORE:   %-10d", bestScore_zen);
+						j += 11;
+					}
+					break;
+				case 'j':
+					printf("> CONTINUE <");
+					j += 5;
+					break;
+				case 'k':
+					printf("use [left arrow] to move mino left");
+					j += 16;
+					break;
+				case 'n':
+					printf("use [down arrow] to softdrop");
+					j += 13;
+					break;
+				case 'o':
+					printf("use [space] to harddrop ");
+					j += 11;
+					break;
+				case 'p':
+					printf("use [up arrow] / [x] to ");
+					j += 11;
+					break;
+				case 'v':
+					printf("rotate mino colckwise ");
+					j += 10;
+					break;
+				case 'q':
+					printf("use [z] to rotate mino countercolckwise ");
+					j += 19;
+					break;
+				case 'r':
+					printf("use [right arrow] to move mino right");
+					j += 17;
+					break;
 				default:
 					break;
 				}
@@ -706,4 +869,520 @@ struct MyHeadType* MakeStack()
 	}
 	MyHead->next->next = NULL;
 	return MyHead;
+}
+
+
+void mode_select_screen(int screen[][100])
+{
+	FILE* fp = fopen("selectmode.txt", "r");
+	load_map(fp, screen);
+	gotoxy(0, 0);
+	print_screen(screen);
+
+	int selected = 0;
+	while (1)
+	{
+		switch (selected)
+		{
+		case 0:
+			gotoxy(11, 17);
+			printf(" ");
+			gotoxy(36, 17);
+			printf(" ");
+			gotoxy(11, 21);
+			printf(" ");
+			gotoxy(36, 21);
+			printf(" ");
+			gotoxy(11, 15);
+			printf(">");
+			gotoxy(36, 15);
+			printf("<");
+			break;
+		case 1:
+			gotoxy(11, 15);
+			printf(" ");
+			gotoxy(36, 15);
+			printf(" ");
+			gotoxy(11, 19);
+			printf(" ");
+			gotoxy(36, 19);
+			printf(" ");
+			gotoxy(11, 17);
+			printf(">");
+			gotoxy(36, 17);
+			printf("<");
+			break;
+		case 2:
+			gotoxy(11, 17);
+			printf(" ");
+			gotoxy(36, 17);
+			printf(" ");
+			gotoxy(11, 21);
+			printf(" ");
+			gotoxy(36, 21);
+			printf(" ");
+			gotoxy(11, 19);
+			printf(">");
+			gotoxy(36, 19);
+			printf("<");
+			break;
+		case 3:
+			gotoxy(11, 15);
+			printf(" ");
+			gotoxy(36, 15);
+			printf(" ");
+			gotoxy(11, 19);
+			printf(" ");
+			gotoxy(36, 19);
+			printf(" ");
+			gotoxy(11, 21);
+			printf(">");
+			gotoxy(36, 21);
+			printf("<");
+			break;
+		default:
+			break;
+		}
+		char c = _getch();
+		switch (c)
+		{
+		case -32:
+			soundEffect("sys_select.mp3", &system_select, &dwID_select, true, false, false);
+			c = _getch();
+			switch (c)
+			{
+			case 72://위
+				selected = (selected + 3) % 4;
+				break;
+			case 80://아래
+				selected = (selected + 1) % 4;
+				break;
+			default:
+				break;
+			}
+			break;
+		case ' ':
+			soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, false);
+			if (selected == 0)//zen
+			{
+				isZen = true;
+				return;
+			}
+			else if (selected == 1)//40lines
+			{
+				is40lines = true;
+				return;
+			}
+			else if (selected == 2)//blits
+			{
+				isBlitz = true;
+				return;
+			}
+			else if (selected == 3)//return to main
+			{
+				isZen = isBlitz = is40lines = false;
+				isTutorial = 0;
+				return;
+			}
+			break;
+		}
+	}
+	return;
+}
+
+
+void game_result(int screen[][100])
+{
+	FILE* fp = fopen("gameresult.txt", "r");
+	load_map(fp, screen);
+	fclose(fp);
+
+	gotoxy(0, 0);
+	print_screen(screen);
+
+	while (1)
+	{
+		if (_kbhit())
+		{
+			char c = _getch();
+			if (c == ' ') return;
+		}
+	}
+
+	return;
+}
+
+
+void main_screen(struct MyHeadType* MyHead, int screen[][100])
+{
+
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false, false);
+	FILE* fp = fopen("main.txt", "r");
+	load_map(fp, screen);
+	fclose(fp);
+
+	gotoxy(0, 0);
+	print_screen(screen);
+
+	int selected = 0;
+	while (1)
+	{
+		switch (selected)
+		{
+		case 0:
+			gotoxy(11, 15);
+			printf(" ");
+			gotoxy(36, 15);
+			printf(" ");
+			gotoxy(11, 19);
+			printf(" ");
+			gotoxy(36, 19);
+			printf(" ");
+			gotoxy(11, 13);
+			printf(">");
+			gotoxy(36, 13);
+			printf("<");
+			break;
+		case 1:
+			gotoxy(11, 13);
+			printf(" ");
+			gotoxy(36, 13);
+			printf(" ");
+			gotoxy(11, 17);
+			printf(" ");
+			gotoxy(36, 17);
+			printf(" ");
+			gotoxy(11, 15);
+			printf(">");
+			gotoxy(36, 15);
+			printf("<");
+			break;
+		case 2:
+			gotoxy(11, 15);
+			printf(" ");
+			gotoxy(36, 15);
+			printf(" ");
+			gotoxy(11, 19);
+			printf(" ");
+			gotoxy(36, 19);
+			printf(" ");
+			gotoxy(11, 17);
+			printf(">");
+			gotoxy(36, 17);
+			printf("<");
+			break;
+		case 3:
+			gotoxy(11, 13);
+			printf(" ");
+			gotoxy(36, 13);
+			printf(" ");
+			gotoxy(11, 17);
+			printf(" ");
+			gotoxy(36, 17);
+			printf(" ");
+			gotoxy(11, 19);
+			printf(">");
+			gotoxy(36, 19);
+			printf("<");
+			break;
+		default:
+			break;
+		}
+		char c = _getch();
+		switch (c)
+		{
+		case -32:
+			soundEffect("sys_select.mp3", &system_select, &dwID_select, true, false, false);
+			c = _getch();
+			switch (c)
+			{
+			case 72://위
+				selected = (selected + 3) % 4;
+				break;
+			case 80://아래
+				selected = (selected + 1) % 4;
+				break;
+			default:
+				break;
+			}
+			break;
+		case ' ':
+			soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, false);
+			if (selected == 0)//game start
+			{
+				mode_select_screen(screen);
+				return;
+			}
+			else if (selected == 1)//settings
+			{
+
+			}
+			else if (selected == 2)//help
+			{
+				help_screen(screen);
+			}
+			else if (selected == 3)//exit game
+			{
+				free(MyHead);
+				save_record();
+				exit(0);
+			}
+			else
+			{
+
+			}
+			break;
+		}
+	}
+	return;
+}
+//공사중
+
+void game_over(int screen[][100])
+{
+	IsGamePlaying = false;
+
+	if (IsInstantRetry)
+	{
+		IsRetry = true;
+		return;
+	}
+
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false, false);
+	Sleep(100);
+
+	FILE* fp = fopen("game_over.txt", "r");
+	load_map(fp, screen);
+	fclose(fp);
+
+	gotoxy(0, 0);
+	print_screen(screen);
+
+	int selected = 0;
+	while (1)
+	{
+		switch (selected)
+		{
+		case 0:
+			gotoxy(11, 19);
+			printf(" ");
+			gotoxy(36, 19);
+			printf(" ");
+			gotoxy(11, 17);
+			printf(">");
+			gotoxy(36, 17);
+			printf("<");
+			break;
+		case 1:
+			gotoxy(11, 17);
+			printf(" ");
+			gotoxy(36, 17);
+			printf(" ");
+			gotoxy(11, 19);
+			printf(">");
+			gotoxy(36, 19);
+			printf("<");
+			break;
+		default:
+			break;
+		}
+		char c = _getch();
+		switch (c)
+		{
+		case -32:
+			c = _getch();
+			switch (c)
+			{
+			case 72://위
+				selected = (selected + 1) % 2;
+				break;
+			case 80://아래
+				selected = (selected - 1) % 2;
+				if (selected == -1) selected += 2;
+				break;
+			default:
+				break;
+			}
+			break;
+		case ' ':
+			if (selected == 0)
+			{
+				return;
+			}
+			else
+			{
+				IsRetry = true;
+				return;
+			}
+			break;
+		}
+	}
+
+	return;
+}
+
+
+void Pause()
+{
+	GamePause = true;
+	int selected = 0;
+
+	FILE* fp = fopen("pause.txt", "r");
+	load_map(fp, screen1);
+	fclose(fp);
+	gotoxy(0, 0);
+	print_screen(screen1);
+	gotoxy(11, 17);
+	printf(">");
+	gotoxy(36, 17);
+	printf("<");
+	while (1)
+	{
+		if (_kbhit)
+		{
+			char c = _getch();
+			if (c == ' ')
+			{
+				soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, false);
+				if (selected == 0)
+				{
+					GamePause = false;
+					break;
+				}
+				else
+				{
+					GamePause = false;
+					IsGamePlaying = false;
+					break;
+				}
+			}
+			else if (c == -32)
+			{
+				c = _getch();
+				switch (c)
+				{
+				case 72://위
+				case 80://아래
+					soundEffect("sys_select.mp3", &system_select, &dwID_select, true, false, false);
+					selected = (selected + 1) % 2;
+					if (selected == 0) {
+						gotoxy(11, 17);
+						printf(">");
+						gotoxy(36, 17);
+						printf("<");
+						gotoxy(11, 19);
+						printf(" ");
+						gotoxy(36, 19);
+						printf(" ");
+					}
+					else {
+						gotoxy(11, 17);
+						printf(" ");
+						gotoxy(36, 17);
+						printf(" ");
+						gotoxy(11, 19);
+						printf(">");
+						gotoxy(36, 19);
+						printf("<");
+					}
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+
+	return;
+}
+
+
+void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat, bool load) {
+
+	soundEffect->lpstrElementName = filePath;//파일 오픈
+	soundEffect->lpstrDeviceType = "mpegvideo";//mp3 형식
+	*dwID = soundEffect->wDeviceID;
+	mciSendCommand(0, MCI_OPEN, MCI_OPEN_ELEMENT | MCI_OPEN_TYPE, (DWORD)(LPVOID) & *soundEffect);
+
+	if (!load)
+	{
+		if (playing) {
+			if (repeat) {
+				mciSendCommand(*dwID, MCI_PLAY, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID) & *soundEffect); //음악 반복 재생
+			}
+			else {
+				mciSendCommand(*dwID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL); //음원 재생 위치를 처음으로 초기화
+				mciSendCommand(*dwID, MCI_PLAY, MCI_NOTIFY, (DWORD)(LPVOID) & *soundEffect);	//음악 한 번만 재생
+			}
+		}
+		else {
+			mciSendCommand(*dwID, MCI_PAUSE, MCI_DGV_PLAY_REPEAT, (DWORD)(LPVOID) & *soundEffect);	//음악 재생 중지
+			mciSendCommand(*dwID, MCI_SEEK, MCI_SEEK_TO_START, (DWORD)(LPVOID)NULL); //음원 재생 위치를 처음으로 초기화
+		}
+	}
+	return;
+}
+
+
+void load_record()
+{
+	FILE* fp = fopen("bestscore.txt", "r");
+	if (fp == NULL)
+	{
+		return;
+	}
+	else {
+		fscanf(fp, "%d %d %d", &bestScore, &bestScore_zen, &best_record);
+		fclose(fp);
+	}
+
+	return;
+}
+
+void save_record()
+{
+	FILE* fp = fopen("bestscore.txt", "w");
+	if (fp == NULL)
+	{
+		return;
+	}
+	else {
+		fprintf(fp, "%d %d %d", bestScore, bestScore_zen, best_record);
+		fclose(fp);
+	}
+
+	return;
+}
+
+void help_screen(int screen[][100])
+{
+	FILE* fp = fopen("help.txt", "r");
+	if (fp == NULL)
+	{
+		printf("error!");
+		Sleep(10000);
+		return;
+	}
+	
+	load_map(fp, screen);
+	gotoxy(0, 0);
+	print_screen(screen);
+
+	char c;
+
+	while (_kbhit) c = _getch();
+
+	while (1)
+	{
+		if (_kbhit())
+		{
+			c = _getch();
+			if (c == ' ')
+			{
+				break;
+			}
+		}
+	}
+
+	return;
 }
