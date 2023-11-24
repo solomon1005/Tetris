@@ -39,7 +39,7 @@ int dwID_softdrop;
 int dwID_rotate;
 int dwID_landing;
 
-unsigned _stdcall Thread_Ingame(void* arg)
+unsigned _stdcall Thread_Ingame(void* arg) // 일정 시간마다 블록을 떨어뜨리는 스레드이다.
 {
 	while (IsGamePlaying)
 	{
@@ -47,14 +47,14 @@ unsigned _stdcall Thread_Ingame(void* arg)
 		{
 			continue;
 		}
-		Sleep(250);
+		Sleep(600);
 		Drop_Mino(&fallingmino, screen);
 	}
 
 	return 0;
 }
 
-unsigned _stdcall Thread_AllClear(void* arg)
+unsigned _stdcall Thread_AllClear(void* arg) // 화면에서 블록을 모두 없앴을 때 효과를 구현한다.
 {
 	Sleep(750);
 	All_Clear++;
@@ -68,12 +68,12 @@ unsigned _stdcall Thread_AllClear(void* arg)
 }
 
 
-void softDrop(struct FallingMino* fallingmino, int screen[][100])
+void softDrop(struct FallingMino* fallingmino, int screen[][100]) // 미노를 아래로 한 칸 내리는 함수이다.
 {
-	DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+	DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen); // 현재 미노를 삭제한 후
 	bool flag = true;
 
-	for (int k = 0; k < softDropVal && flag; k++)
+	for (int k = 0; k < softDropVal && flag; k++)// 미노 아래에 공간이 있는지 확인한 후
 	{
 		for (int i = 1; i <= 4; i++)
 		{
@@ -233,7 +233,7 @@ void softDrop(struct FallingMino* fallingmino, int screen[][100])
 				break;
 			}
 		}
-		if (flag)
+		if (flag) // 미노를 아래로 한 칸 내린다.
 		{
 			fallingmino->mino_y += 1;
 			for (int i = 1; i <= 4; i++)
@@ -243,17 +243,17 @@ void softDrop(struct FallingMino* fallingmino, int screen[][100])
 		}
 	}
 
-	SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
+	SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen); // 화면에 미노를 표시한다.
 
 	return;
 }
 
 
-bool IsMinoSetHere(int mino_x, int mino_y, int shape, int direction, int screen[][100])
+bool IsMinoSetHere(int mino_x, int mino_y, int shape, int direction, int screen[][100]) // 미노가 해당 위치에 놓일 수 있는지를 확인하는 함수이다.
 {
 	bool flag = true;
 
-	switch (shape)
+	switch (shape) // 모양에 따라 미노가 놓일 수 있는가를 판단한다.
 	{
 	case 'I':
 		switch (direction)
@@ -433,17 +433,17 @@ bool IsMinoSetHere(int mino_x, int mino_y, int shape, int direction, int screen[
 		break;
 	}
 
-	return flag;
+	return flag; // 놓일 수 있는지 여부를 판단한다.
 }
 
 
-struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][100])
+struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][100]) // 일반적인 회전(제자리 돌리기)에 실패하였을 경우 특정 알고리즘에 의해 미노가 끼워 들어가도록 한다.
 {
-	DeleteMino(fallingmino.mino_x, fallingmino.mino_y, fallingmino.shape, fallingmino.direction, screen);
+	DeleteMino(fallingmino.mino_x, fallingmino.mino_y, fallingmino.shape, fallingmino.direction, screen); // 현재 위치한 미노를 없앤 후 
 
 	bool flag = false;
 
-	switch (fallingmino.shape)
+	switch (fallingmino.shape) // 미노의 모양, 위치, 방향에 따라 알고리즘을 적용해 들어갈 수 있는지를 판단 후 위치를 바꾸어 리턴한다.
 	{
 	case 'I':
 		if (count == 1)
@@ -4291,7 +4291,7 @@ struct FallingMino Spin(struct FallingMino fallingmino, int count, int screen[][
 }
 
 
-void erase_shadow(int screen[][100])
+void erase_shadow(int screen[][100]) // 미노의 그림자를 화면에서 지운다.
 {
 	for (int i = SCREEN_START_X; i <= SCREEN_END_X; i++)
 	{
@@ -4306,13 +4306,13 @@ void erase_shadow(int screen[][100])
 }
 
 
-void shadow_mino(struct FallingMino fallingmino, int screen[][100])
+void shadow_mino(struct FallingMino fallingmino, int screen[][100]) // 미노의 위치, 방향, 모양에 따라 그림자를 그린다.
 {
 	for (int i = 0; i <= SCREEN_END_Y; i++)
 	{
 		bool flag = false;
 
-		for (int j = 1; j <= 4; j++)
+		for (int j = 1; j <= 4; j++) // 미노의 그림자가 설정될 위치를 찾기 위해 아래로 내려가며 탐색한다.
 		{
 			if (fallingmino.piece_x[j] == fallingmino.piece_x[1] && fallingmino.piece_y[j] + i == fallingmino.piece_y[1]) continue;
 			if (fallingmino.piece_x[j] == fallingmino.piece_x[2] && fallingmino.piece_y[j] + i == fallingmino.piece_y[2]) continue;
@@ -4323,7 +4323,7 @@ void shadow_mino(struct FallingMino fallingmino, int screen[][100])
 
 		}
 
-		if (flag)
+		if (flag) // 미노의 모양, 방향, 위치에 따라 그림자를 그린다.
 		{
 			switch (fallingmino.shape)
 			{
@@ -4359,15 +4359,15 @@ void shadow_mino(struct FallingMino fallingmino, int screen[][100])
 }
 
 
-struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int screen[][100])
+struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int screen[][100]) // 미노를 오른쪽으로 count값만큼 회전한다.
 {
-	erase_shadow(screen);
+	erase_shadow(screen); // 그림자와 미노를 지운다.
 
 	bool flag = true;
 	DeleteMino(fallingmino.mino_x, fallingmino.mino_y, fallingmino.shape, fallingmino.direction, screen);
 
 
-	switch ((fallingmino.direction + count) % 4)
+	switch ((fallingmino.direction + count) % 4) // 미노가 들어갈 수 있는지를 판단한다.
 	{
 
 	case UP:
@@ -4572,7 +4572,7 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 
 
 
-	if (flag)
+	if (flag) // 미노가 들어갈 수 있다면 미노를 돌려 위치를 새로 저장한다.
 	{
 		drop_count = drop_count < 30 ? 30 : drop_count;
 		fallingmino.direction = (fallingmino.direction + count) % 4;
@@ -4914,14 +4914,14 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 			}
 		}
 	}
-	else
+	else //아니라면 wallkick 데이터에 따라 미노의 위치를 조정한다.
 	{
 		fallingmino = Spin(fallingmino, count, screen);
 	}
 
 
 
-	if (fallingmino.shape == 'T')
+	if (fallingmino.shape == 'T') // 현재 미노가 t라면 회전 시 보너스 점수(t스핀)를 주기 위해 판별한다.
 	{
 		if ((int)(screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != 0 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != 2 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 0] != SHADOW) + (int)(screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != 0 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != 2 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 0] != SHADOW) + (int)(screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != 0 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != 2 && screen[fallingmino.mino_y + 0][fallingmino.mino_x + 2] != SHADOW) + (int)(screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != 0 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != 2 && screen[fallingmino.mino_y + 2][fallingmino.mino_x + 2] != SHADOW) >= 3)
 		{
@@ -4945,21 +4945,21 @@ struct FallingMino Turn_Right(struct FallingMino fallingmino, int count, int scr
 }
 
 
-void Hard_Drop(struct FallingMino* fallingmino, int screen[][100])
+void Hard_Drop(struct FallingMino* fallingmino, int screen[][100]) // 미노를 가장 아래까지 한 번에 내려 고정하는 함수이다.
 {
 	soundEffect("game_landing.mp3", &game_landing, &dwID_landing, true, false, false);
 	bool flag = false;
 	char memory = fallingmino->shape;
 
 	DeleteMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
-	for (int i = 1; i <= SCREEN_END_Y; i++)
+	for (int i = 1; i <= SCREEN_END_Y; i++) //미노가 내려갈 가장 아래의 위치를 찾는다.
 	{
 		if (screen[i + fallingmino->piece_y[1]][fallingmino->piece_x[1]] != 2 && screen[i + fallingmino->piece_y[1]][fallingmino->piece_x[1]] != 0 && screen[i + fallingmino->piece_y[1]][fallingmino->piece_x[1]] != SHADOW) flag = true;
 		if (screen[i + fallingmino->piece_y[2]][fallingmino->piece_x[2]] != 2 && screen[i + fallingmino->piece_y[2]][fallingmino->piece_x[2]] != 0 && screen[i + fallingmino->piece_y[2]][fallingmino->piece_x[2]] != SHADOW) flag = true;
 		if (screen[i + fallingmino->piece_y[3]][fallingmino->piece_x[3]] != 2 && screen[i + fallingmino->piece_y[3]][fallingmino->piece_x[3]] != 0 && screen[i + fallingmino->piece_y[3]][fallingmino->piece_x[3]] != SHADOW) flag = true;
 		if (screen[i + fallingmino->piece_y[4]][fallingmino->piece_x[4]] != 2 && screen[i + fallingmino->piece_y[4]][fallingmino->piece_x[4]] != 0 && screen[i + fallingmino->piece_y[4]][fallingmino->piece_x[4]] != SHADOW) flag = true;
 
-		if (flag)
+		if (flag) // 가장 아래로 내려갈 위치를 찾았다면 미노의 위치를 조정한 후 고정한다.
 		{
 			if (fallingmino->shape != memory)
 				return;
@@ -4974,14 +4974,14 @@ void Hard_Drop(struct FallingMino* fallingmino, int screen[][100])
 }
 
 
-void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100])
+void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]) // 미노를 왼쪽/오른쪽으로 움직이도록 하는 함수이다.
 {
 
 	bool flag = true;
 
-	if (direction == LEFT)
+	if (direction == LEFT) // 왼쪽 방향으로 움직인다면
 	{
-		switch (fallingmino->direction)
+		switch (fallingmino->direction) // 왼쪽 방향으로 갈 수 있는지 판별해서
 		{
 		case UP:
 			switch (fallingmino->shape)
@@ -5137,7 +5137,7 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 			break;
 		}
 
-		if (flag)
+		if (flag) // 미노의 위치를 고정한다.
 		{
 			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false, false);
 			erase_shadow(screen);
@@ -5151,9 +5151,9 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 			SetMino(fallingmino->mino_x, fallingmino->mino_y, fallingmino->shape, fallingmino->direction, screen);
 		}
 	}
-	else if (direction == RIGHT)
+	else if (direction == RIGHT) // 오른쪽으로 이동한다면
 	{
-		switch (fallingmino->direction)
+		switch (fallingmino->direction) // 오른쪽으로 이동할 수 있는가를 판별해서
 		{
 		case UP:
 			switch (fallingmino->shape)
@@ -5309,7 +5309,7 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 			break;
 		}
 
-		if (flag)
+		if (flag) // 움직인 후 미노의 위치를 고정한다.
 		{
 			soundEffect("game_move.mp3", &game_move, &dwID_move, true, false, false);
 			erase_shadow(screen);
@@ -5328,14 +5328,14 @@ void Move_Mino(struct FallingMino* fallingmino, int direction, int screen[][100]
 }
 
 
-void Clear_Line(int screen[][100])
+void Clear_Line(int screen[][100]) // 화면에 줄이 채워졌을 때 줄을 지우는 함수이다.
 {
 
 	T_Spin_Print = 1;
 	bool flag = true;
 	int line_cnt = 0;
 
-	for (int j = SCREEN_END_Y; j >= 0; j--)
+	for (int j = SCREEN_END_Y; j >= 0; j--) // 배열의 처음부터 아래로 내려가며 완성된 줄이 있는지 판단한다.
 	{
 		flag = true;
 		for (int i = SCREEN_START_X; i <= SCREEN_END_X; i++)
@@ -5344,7 +5344,7 @@ void Clear_Line(int screen[][100])
 				flag = false;
 		}
 
-		if (flag)
+		if (flag) // 만약 완성된 줄이 있다면 그 줄을 삭제하고 위쪽 줄을 아래로 내린다.
 		{
 			num_lines++;
 			line_cnt++;
@@ -5363,7 +5363,7 @@ void Clear_Line(int screen[][100])
 		}
 	}
 
-	if (is40lines && num_lines >= 40)
+	if (is40lines && num_lines >= 40) // 40lines 모드의 종료 조건으로, 40개의 줄을 없앴다면 게임 진행을 종료하고 결과 화면을 출력한다.
 	{
 		endTime = time(NULL);
 		record = endTime - startTime;
@@ -5372,7 +5372,7 @@ void Clear_Line(int screen[][100])
 		return;
 	}
 
-	if (T_Spin)
+	if (T_Spin) // T미노를 이용해 스핀했는지 여부에 따라 화면에 표시 여부를 결정한다.
 	{
 		T_Spin_Print = true;
 		T_Spin--;
@@ -5385,7 +5385,7 @@ void Clear_Line(int screen[][100])
 
 	if (cleared_line % 10 == 0) cleared_line = 0;
 
-	if (line_cnt)
+	if (line_cnt) // 없앤 줄 수와 t스핀 여부에 따라 점수를 추가한다.
 	{
 		if (cleared_line % 10 >= 0) combo++;
 		else combo = 0;
@@ -5425,7 +5425,7 @@ void Clear_Line(int screen[][100])
 	cleared_line--;
 	flag = true;
 
-	for (int j = SCREEN_END_Y; j >= 0; j--)
+	for (int j = SCREEN_END_Y; j >= 0; j--) // all clear 여부를 판단한다.
 	{
 		for (int i = SCREEN_START_X; i <= SCREEN_END_X; i++)
 		{
@@ -5434,7 +5434,7 @@ void Clear_Line(int screen[][100])
 		}
 	}
 
-	All_Clear = 1;
+	All_Clear = 1; // all clear라면 효과를 재생하고 추가 점수를 부여한다.
 	_beginthreadex(NULL, 0, Thread_AllClear, 0, 0, NULL);
 	soundEffect("game_perfect.mp3", &game_perfect, &dwID_perfect, true, false, false);
 	score += 2000;
@@ -5443,13 +5443,13 @@ void Clear_Line(int screen[][100])
 }
 
 
-void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
+void Drop_Mino(struct FallingMino* fallingmino, int screen[][100]) // 미노의 위츠를 하나 아래로 내리고, 더 이상 내려갈 곳이 없다면 일정 시간 후 미노의 위치를 고정하는 함수이다.
 {
 
 	bool flag = true;
 	char memory = fallingmino->shape;
 
-	if (IsMinoFalling)
+	if (IsMinoFalling)//미노의 모양, 방향, 위치에 따라 아래쪽으로 내려갈 수 있는지 여부를 판단한다.
 	{
 		switch (fallingmino->direction)
 		{
@@ -5607,7 +5607,7 @@ void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
 			break;
 		}
 
-		if (flag)
+		if (flag) // 만약 내려갈 수 있다면 미노의 위치를 한 칸 아래로 이동시킨다.
 		{
 			for (int i = 1; i <= 4; i++)
 				screen[fallingmino->piece_y[i]][fallingmino->piece_x[i]] = fallingmino->piece_x[i] >= SCREEN_START_X && fallingmino->piece_x[i] <= SCREEN_END_X && fallingmino->piece_y[i] >= 3 ? 2 : 0;
@@ -5620,7 +5620,7 @@ void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
 
 			fallingmino->mino_y++;
 		}
-		else
+		else // 밑에 바닥이 있어 더 이상 움직일 수 없다면 일정 시간 후 미노의 위치를 고정한다.
 		{
 			bool IsSpace = true;
 			drop_count = 90;
@@ -5790,7 +5790,7 @@ void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
 					break;
 				}
 
-				if (IsSpace)
+				if (IsSpace) // 시간이 조금 지난 후 미노의 아래에 공간이 있다면 미노를 아래로 내리도록 한다.
 				{
 					IsMinoFalling = true;
 					return;
@@ -5965,11 +5965,9 @@ void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
 				return;
 			}
 
-			if (fallingmino->shape != memory) return;
-
-			IsMinoFalling = false;
+			IsMinoFalling = false; // 일정 시간이 지났음에도 미노가 아래로 움직일 수 없다면 미노의 위치를 고정한다.
 			IsHolded = false;
-			SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);//색넣기
+			SetMino(HOLD_X, HOLD_Y, Hold[0], UP, screen);
 
 		}
 	}
@@ -5979,7 +5977,7 @@ void Drop_Mino(struct FallingMino* fallingmino, int screen[][100])
 }
 
 
-void DeleteMino(int x, int y, char shape, int direction, int screen[][100])
+void DeleteMino(int x, int y, char shape, int direction, int screen[][100]) // 미노의 모양, 위치, 방향에 따라 화면에서 미노를 삭제한다.
 {
 	if (direction == UP)
 	{
@@ -6214,11 +6212,11 @@ void DeleteMino(int x, int y, char shape, int direction, int screen[][100])
 }
 
 
-void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][100])
+void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][100]) // 다음 나올 미노의 모양을 확인하고 미노를 생성한다.
 {
 	IsMinoFalling = true;
 
-	switch (NextMino[0])
+	switch (NextMino[0]) // 미노의 모양에 따라 위치를 지정한다.
 	{
 	case 'I':
 		for (int i = 1; i <= 4; i++)
@@ -6312,7 +6310,7 @@ void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][1
 	fallingmino->mino_y = START_Y;
 	shadow_mino(*fallingmino, screen);
 
-	SetMino(START_X, START_Y, NextMino[0], UP, screen);
+	SetMino(START_X, START_Y, NextMino[0], UP, screen); // 미노를 화면에 표시한다.
 	for (int i = 1; i <= 14; i++)
 	{
 		NextMino[i - 1] = NextMino[i];
@@ -6322,9 +6320,9 @@ void SummonMino(struct FallingMino* fallingmino, char NextMino[], int screen[][1
 }
 
 
-void SetMino(int x, int y, char shape, int direction, int screen[][100])
+void SetMino(int x, int y, char shape, int direction, int screen[][100]) // 미노를 화면에 표시하는 함수이다.
 {
-	if (direction == UP)
+	if (direction == UP)//미노의 모양, 방향, 위치에 따라 미노를 배열에 넣는다.
 	{
 		switch (shape)
 		{
@@ -6744,19 +6742,19 @@ void SetMino(int x, int y, char shape, int direction, int screen[][100])
 }
 
 
-void CreateNextMino(char NextMino[], bool IsFirstCreate)
+void CreateNextMino(char NextMino[], bool IsFirstCreate) // 난수를 이용해 다음에 나올 미노를 생성한다.
 {
 	srand((unsigned int)time(NULL));
 	int random;
 	int cnt = -1;
 	int flag = 0;
-	if (IsFirstCreate)
+	if (IsFirstCreate) // 첫 생성이라면 앞 7개를 생성한다.
 	{
 		flag = 1;
 		srand((unsigned int)time(NULL) - 10);
 	}
 
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < 7; i++)// 7bag(미노 7개가 순서만 바뀐 채 7개의 묶음은 변함없이 나오는 형태)를 난수를 사용하여 구현한다.
 	{
 		random = rand() % (7 - i);
 		for (int j = 0; j < 7; j++)

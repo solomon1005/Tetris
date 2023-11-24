@@ -42,20 +42,20 @@ time_t endTime;
 
 
 
-void gotoxy(int x, int y) {
+void gotoxy(int x, int y) {//커서를 이동하는 함수이다.
 	COORD pos = { x,y };
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 	return;
 }
 
 
-void print_screen(int screen[][100])
+void print_screen(int screen[][100]) // 화면을 출력하는 함수이다.
 {
 	for (int i = 0; i < 24; i++)
 	{
 		for (int j = 0; j < 26; j++)
 		{
-			if (All_Clear % 2 == 0)
+			if (All_Clear % 2 == 0) // 색상 반전 여부에 따라 색상을 다르게 지정한다.
 			{
 				switch (screen[i][j])
 				{
@@ -397,6 +397,10 @@ void print_screen(int screen[][100])
 				case 'r':
 					printf("use [right arrow] to move mino right");
 					j += 17;
+					break;
+				case 'w':
+					printf("use [esc] to pause game ");
+					j += 11;
 					break;
 				default:
 					break;
@@ -744,6 +748,10 @@ void print_screen(int screen[][100])
 					printf("use [right arrow] to move mino right");
 					j += 17;
 					break;
+				case 'w':
+					printf("use [esc] to pause game ");
+					j += 11;
+					break;
 				default:
 					break;
 				}
@@ -757,13 +765,13 @@ void print_screen(int screen[][100])
 }
 
 
-void load_map(FILE* fp, int screen[][100])
+void load_map(FILE* fp, int screen[][100]) // txt파일을 로드하는 함수이다.
 {
 	char c[100];
 
 	for (int i = 0; i < 24; i++)
 	{
-		fgets(c, 100, fp);
+		fgets(c, 100, fp); // 한 줄씩 받아 2차원 배열에 저장한다.
 		for (int j = 0; j < 51; j += 2)
 		{
 			if (c[j] == '\n')
@@ -782,7 +790,7 @@ void load_map(FILE* fp, int screen[][100])
 }
 
 
-void CursorView()
+void CursorView() // 화면 깜빡임을 없애는 함수이다(커서 숨기기)
 {
 	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_CURSOR_INFO cursorInfo;
@@ -793,7 +801,7 @@ void CursorView()
 }
 
 
-void textcolor(int ColorNum)
+void textcolor(int ColorNum) // 글자 색을 지정하는 함수이다.
 {
 	HANDLE _stdcall stdhandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(stdhandle, ColorNum);
@@ -801,23 +809,23 @@ void textcolor(int ColorNum)
 }
 
 
-struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead)
+struct MyMemoryType* MyStack_Pop(struct MyHeadType* MyHead) // 스택에 들어 있는 데이터를 꺼내 반환하는 함수이다.
 {
 	struct MyMemoryType* LastElement = MyHead->next;
 	for (int i = 0; i < MyHead->count; i++)
-		LastElement = LastElement->next;
+		LastElement = LastElement->next; // 스택의 마지막 데이터를 찾아 가
 	MyHead->count--;
 
-	return LastElement;
+	return LastElement; // 그 데이터를 리턴한다.
 }
 
 
-void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], struct FallingMino* fallingmino, int screen[][100])
+void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], struct FallingMino* fallingmino, int screen[][100]) // 데이터를 스택에 넣는 함수이다.
 {
 	struct MyMemoryType* LastElement = MyHead->next;
 
 	for (int i = 0; i < MyHead->count; i++)
-		LastElement = LastElement->next;
+		LastElement = LastElement->next; //스택의 마지막 원소를 찾고 동적 할당받아 데이터를 넣는다.
 
 	MyHead->count++;
 
@@ -850,7 +858,7 @@ void MyStack_Push(struct MyHeadType* MyHead, char Hold[20], char NextMino[20], s
 }
 
 
-struct MyHeadType* MakeStack()
+struct MyHeadType* MakeStack() // 처음 스택을 만들어 데이터를 저장할 수 있도록 한다.
 {
 	struct MyHeadType* MyHead = (struct MyHeadType*)malloc(sizeof(struct MyHeadType));
 	if (MyHead == NULL)
@@ -872,9 +880,9 @@ struct MyHeadType* MakeStack()
 }
 
 
-void mode_select_screen(int screen[][100])
+void mode_select_screen(int screen[][100]) // 모드 선택 화면이다.
 {
-	FILE* fp = fopen("selectmode.txt", "r");
+	FILE* fp = fopen("selectmode.txt", "r"); // 화면을 로드한다.
 	load_map(fp, screen);
 	gotoxy(0, 0);
 	print_screen(screen);
@@ -882,7 +890,7 @@ void mode_select_screen(int screen[][100])
 	int selected = 0;
 	while (1)
 	{
-		switch (selected)
+		switch (selected) // 선택된 값에 따라 꺽쇠를 표기한다.
 		{
 		case 0:
 			gotoxy(11, 17);
@@ -946,7 +954,7 @@ void mode_select_screen(int screen[][100])
 		char c = _getch();
 		switch (c)
 		{
-		case -32:
+		case -32: // 위 또는 아래 화살표를 입력받으면 선택 값을 변경한다.
 			soundEffect("sys_select.mp3", &system_select, &dwID_select, true, false, false);
 			c = _getch();
 			switch (c)
@@ -961,7 +969,7 @@ void mode_select_screen(int screen[][100])
 				break;
 			}
 			break;
-		case ' ':
+		case ' ': // 스페이스 바를 눌렀다면 선택된 값에 맞는 함수를 실행한다.
 			soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, false);
 			if (selected == 0)//zen
 			{
@@ -982,6 +990,12 @@ void mode_select_screen(int screen[][100])
 			{
 				isZen = isBlitz = is40lines = false;
 				isTutorial = 0;
+				FILE* fp = fopen("main.txt", "r");
+				load_map(fp, screen);
+				fclose(fp);
+
+				gotoxy(0, 0);
+				print_screen(screen);
 				return;
 			}
 			break;
@@ -991,7 +1005,7 @@ void mode_select_screen(int screen[][100])
 }
 
 
-void game_result(int screen[][100])
+void game_result(int screen[][100]) // 게임 결과(점수, 최고 점수) 를 표기한다.
 {
 	FILE* fp = fopen("gameresult.txt", "r");
 	load_map(fp, screen);
@@ -1013,11 +1027,11 @@ void game_result(int screen[][100])
 }
 
 
-void main_screen(struct MyHeadType* MyHead, int screen[][100])
+void main_screen(struct MyHeadType* MyHead, int screen[][100]) // 메인 화면을 로드/표기한다.
 {
 
-	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false, false);
-	FILE* fp = fopen("main.txt", "r");
+	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false, false); // 배경 화면의 재생을 중지한다.
+	FILE* fp = fopen("main.txt", "r"); // 화면을 로드 후 출력한다.
 	load_map(fp, screen);
 	fclose(fp);
 
@@ -1025,7 +1039,7 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 	print_screen(screen);
 
 	int selected = 0;
-	while (1)
+	while (1) // 선택값에 따라 그에 맞는 옵션을 수행한다.
 	{
 		switch (selected)
 		{
@@ -1097,10 +1111,10 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 			switch (c)
 			{
 			case 72://위
-				selected = (selected + 3) % 4;
+				selected = (selected + 2) % 3;
 				break;
 			case 80://아래
-				selected = (selected + 1) % 4;
+				selected = (selected + 1) % 3;
 				break;
 			default:
 				break;
@@ -1111,36 +1125,31 @@ void main_screen(struct MyHeadType* MyHead, int screen[][100])
 			if (selected == 0)//game start
 			{
 				mode_select_screen(screen);
-				return;
+				if (isBlitz || is40lines || isZen)
+				{
+					return;
+				}
 			}
-			else if (selected == 1)//settings
-			{
-
-			}
-			else if (selected == 2)//help
+			else if (selected == 1)//help
 			{
 				help_screen(screen);
 			}
-			else if (selected == 3)//exit game
+			else if (selected == 2)//exit game
 			{
 				free(MyHead);
 				save_record();
 				exit(0);
-			}
-			else
-			{
-
 			}
 			break;
 		}
 	}
 	return;
 }
-//공사중
 
-void game_over(int screen[][100])
+
+void game_over(int screen[][100]) // 게임 오버 화면을 로드하고 표시/실행하는 함수이다.
 {
-	IsGamePlaying = false;
+	IsGamePlaying = false; // 게임의 플레이를 중지한다.
 
 	if (IsInstantRetry)
 	{
@@ -1151,7 +1160,7 @@ void game_over(int screen[][100])
 	soundEffect("TetrisTheme.mp3", &bgm, &dwID_bgm, false, false, false);
 	Sleep(100);
 
-	FILE* fp = fopen("game_over.txt", "r");
+	FILE* fp = fopen("game_over.txt", "r"); // 파일을 열어 로드, 출력한다.
 	load_map(fp, screen);
 	fclose(fp);
 
@@ -1159,7 +1168,7 @@ void game_over(int screen[][100])
 	print_screen(screen);
 
 	int selected = 0;
-	while (1)
+	while (1) // 선택값에 따라 명령을 수행한다.
 	{
 		switch (selected)
 		{
@@ -1222,13 +1231,13 @@ void game_over(int screen[][100])
 }
 
 
-void Pause()
+void Pause() //게임의 일시 정지 화면이다.
 {
 	GamePause = true;
 	int selected = 0;
 
 	FILE* fp = fopen("pause.txt", "r");
-	load_map(fp, screen1);
+	load_map(fp, screen1);//화면을 로드, 출력한다.
 	fclose(fp);
 	gotoxy(0, 0);
 	print_screen(screen1);
@@ -1236,7 +1245,7 @@ void Pause()
 	printf(">");
 	gotoxy(36, 17);
 	printf("<");
-	while (1)
+	while (1) // 선택값에 따라 명령을 수행한다.
 	{
 		if (_kbhit)
 		{
@@ -1244,12 +1253,12 @@ void Pause()
 			if (c == ' ')
 			{
 				soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, false);
-				if (selected == 0)
+				if (selected == 0)//게임 계속하기
 				{
 					GamePause = false;
 					break;
 				}
-				else
+				else // 메인 화면으로 돌아가기
 				{
 					GamePause = false;
 					IsGamePlaying = false;
@@ -1297,7 +1306,7 @@ void Pause()
 }
 
 
-void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat, bool load) {
+void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool playing, bool repeat, bool load) { // 음악을 재생하는 함수이다.
 
 	soundEffect->lpstrElementName = filePath;//파일 오픈
 	soundEffect->lpstrDeviceType = "mpegvideo";//mp3 형식
@@ -1324,12 +1333,12 @@ void soundEffect(char filePath[], MCI_OPEN_PARMS* soundEffect, int* dwID, bool p
 }
 
 
-void load_record()
+void load_record() //최고 기록을 불러 오는 함수이다.
 {
-	FILE* fp = fopen("bestscore.txt", "r");
+	FILE* fp = fopen("bestscore.txt", "r"); // 파일을 열어서 최고 기록을 로드한다.
 	if (fp == NULL)
 	{
-		return;
+		exit(0);
 	}
 	else {
 		fscanf(fp, "%d %d %d", &bestScore, &bestScore_zen, &best_record);
@@ -1339,24 +1348,24 @@ void load_record()
 	return;
 }
 
-void save_record()
+void save_record() // 최고 기록을 기록하는 함수이다.
 {
-	FILE* fp = fopen("bestscore.txt", "w");
+	FILE* fp = fopen("bestscore.txt", "w"); // 파일을 열어서
 	if (fp == NULL)
 	{
-		return;
+		exit(0);
 	}
 	else {
-		fprintf(fp, "%d %d %d", bestScore, bestScore_zen, best_record);
+		fprintf(fp, "%d %d %d", bestScore, bestScore_zen, best_record); // txt 파일에 기록한다.
 		fclose(fp);
 	}
 
 	return;
 }
 
-void help_screen(int screen[][100])
+void help_screen(int screen[][100]) // 도움말을 로드하고 출력하는 함수이다.
 {
-	FILE* fp = fopen("help.txt", "r");
+	FILE* fp = fopen("help.txt", "r"); // 파일을 연다.
 	if (fp == NULL)
 	{
 		printf("error!");
@@ -1364,21 +1373,27 @@ void help_screen(int screen[][100])
 		return;
 	}
 	
-	load_map(fp, screen);
+	load_map(fp, screen); // 파일을 로드해 배열에 저장한다.
 	gotoxy(0, 0);
 	print_screen(screen);
 
 	char c;
 
-	while (_kbhit) c = _getch();
+	while (_kbhit()) c = _getch();
 
-	while (1)
+	while (1) // 확인을 누르면 메인 화면으로 넘어간다.
 	{
 		if (_kbhit())
 		{
 			c = _getch();
 			if (c == ' ')
 			{
+				soundEffect("sys_ok.mp3", &system_ok, &dwID_ok, true, false, false);
+				FILE* fp1 = fopen("main.txt", "r");
+				load_map(fp1, screen);
+				gotoxy(0, 0);
+				print_screen(screen);
+				fclose(fp1);
 				break;
 			}
 		}
